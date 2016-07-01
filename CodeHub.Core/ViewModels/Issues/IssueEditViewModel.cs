@@ -1,9 +1,9 @@
-using MvvmCross.Core.ViewModels;
 using System.Threading.Tasks;
 using GitHubSharp.Models;
 using System;
 using CodeHub.Core.Messages;
 using System.Linq;
+using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels.Issues
 {
@@ -50,7 +50,7 @@ namespace CodeHub.Core.ViewModels.Issues
                 try
                 {
                     var data = await this.GetApplication().Client.ExecuteAsync(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Issue.Number].Update(IssueTitle, content, state, assignedTo, milestone, labels)); 
-                    Messenger.Publish(new IssueEditMessage(this) { Issue = data.Data });
+                    Messenger.Publish(new IssueEditMessage { Issue = data.Data });
                 }
                 catch (GitHubSharp.InternalServerException)
                 {
@@ -62,7 +62,7 @@ namespace CodeHub.Core.ViewModels.Issues
                     goto tryagain;
                 }
 
-                ChangePresentation(new MvxClosePresentationHint(this));
+                Dismiss();
             }
             catch
             {
@@ -96,11 +96,14 @@ namespace CodeHub.Core.ViewModels.Issues
 //            return Task.Delay(0);
 //        }
 
-        public void Init(NavObject navObject)
+        public IssueEditViewModel(string username, string repository, long id, IssueModel issue = null)
+            : base(username, repository)
         {
-            base.Init(navObject.Username, navObject.Repository);
-            Id = navObject.Id;
-            Issue = GetService<CodeHub.Core.Services.IViewModelTxService>().Get() as IssueModel;
+            Id = id;
+            Issue = issue;
+
+            Title = "Edit Issue";
+
             if (Issue != null)
             {
                 IssueTitle = Issue.Title;
@@ -110,13 +113,6 @@ namespace CodeHub.Core.ViewModels.Issues
                 Content = Issue.Body;
                 IsOpen = string.Equals(Issue.State, "open");
             }
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
-            public long Id { get; set; }
         }
     }
 }

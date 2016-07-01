@@ -2,10 +2,10 @@ using System;
 using Foundation;
 using UIKit;
 using System.Collections.Generic;
-using CodeHub.iOS;
+using CodeHub;
 using SDWebImage;
 
-namespace CodeHub.iOS.TableViewCells
+namespace CodeHub.TableViewCells
 {
     public partial class NewsCellView : UITableViewCell
     {

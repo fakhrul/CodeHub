@@ -1,40 +1,26 @@
 using System.Threading.Tasks;
-using CodeHub.Core.ViewModels;
 using GitHubSharp.Models;
-using System.Windows.Input;
 using CodeHub.Core.Messages;
 using CodeHub.Core.Services;
 using System;
-using MvvmCross.Plugins.Messenger;
-using MvvmCross.Core.ViewModels;
 using System.Reactive.Linq;
-using CodeHub.Core.ViewModels.User;
+using CodeHub.Core.ViewModels.Users;
+using ReactiveUI;
+using System.Reactive;
 
 namespace CodeHub.Core.ViewModels.Issues
 {
     public class IssueViewModel : LoadableViewModel
     {
-        private MvxSubscriptionToken _editToken;
+        private IDisposable _editToken;
         private readonly IFeaturesService _featuresService;
         private readonly IApplicationService _applicationService;
 
-        public long Id 
-        { 
-            get; 
-            private set; 
-        }
+        public long Id { get; }
 
-        public string Username 
-        { 
-            get; 
-            private set; 
-        }
+        public string Username { get; }
 
-        public string Repository 
-        { 
-            get; 
-            private set; 
-        }
+        public string Repository { get; }
 
         public string MarkdownDescription
         {
@@ -81,71 +67,21 @@ namespace CodeHub.Core.ViewModels.Issues
             set { this.RaiseAndSetIfChanged(ref _isModifying, value); }
         }
 
-        public ReactiveUI.ReactiveCommand<object> GoToOwner { get; }
+        public ReactiveCommand<object> GoToOwner { get; }
 
-        public ICommand GoToAssigneeCommand
-        {
-            get 
-            { 
-                return new MvxCommand(() => {
-                    GetService<IViewModelTxService>().Add(Issue.Assignee);
-                    ShowViewModel<IssueAssignedToViewModel>(new IssueAssignedToViewModel.NavObject { Username = Username, Repository = Repository, Id = Id, SaveOnSelect = true });
-                }, () =>  IsCollaborator); 
-            }
-        }
+        public IReactiveCommand<object> GoToAssigneeCommand { get; }
 
-        public ICommand GoToMilestoneCommand
-        {
-            get 
-            { 
-                return new MvxCommand(() => {
-                    GetService<IViewModelTxService>().Add(Issue.Milestone);
-                    ShowViewModel<IssueMilestonesViewModel>(new IssueMilestonesViewModel.NavObject { Username = Username, Repository = Repository, Id = Id, SaveOnSelect = true });
-                }, () =>  IsCollaborator); 
-            }
-        }
+        public IReactiveCommand<object> GoToMilestoneCommand { get; }
 
-        public ICommand GoToLabelsCommand
-        {
-            get 
-            { 
-                return new MvxCommand(() => {
-                    GetService<IViewModelTxService>().Add(Issue.Labels);
-                    ShowViewModel<IssueLabelsViewModel>(new IssueLabelsViewModel.NavObject { Username = Username, Repository = Repository, Id = Id, SaveOnSelect = true });
-                }, () =>  IsCollaborator); 
-            }
-        }
+        public IReactiveCommand<object> GoToLabelsCommand { get; }
 
-        public ICommand GoToEditCommand
-        {
-            get 
-            { 
-                return new MvxCommand(() => {
-                    GetService<IViewModelTxService>().Add(Issue);
-                    ShowViewModel<IssueEditViewModel>(new IssueEditViewModel.NavObject { Username = Username, Repository = Repository, Id = Id });
-                }, () => Issue != null && IsCollaborator); 
-            }
-        }
+        public IReactiveCommand<object> GoToEditCommand { get; }
 
-        public ICommand ToggleStateCommand
-        {
-            get 
-            {
-                return new MvxCommand(() => ToggleState(Issue.State == "open"), () => Issue != null);
-            }
-        }
+        public IReactiveCommand<Unit> ToggleStateCommand { get; }
 
-        private readonly CollectionViewModel<IssueCommentModel> _comments = new CollectionViewModel<IssueCommentModel>();
-        public CollectionViewModel<IssueCommentModel> Comments
-        {
-            get { return _comments; }
-        }
+        public CollectionViewModel<IssueCommentModel> Comments { get; } = new CollectionViewModel<IssueCommentModel>();
 
-        private readonly CollectionViewModel<IssueEventModel> _events = new CollectionViewModel<IssueEventModel>();
-        public CollectionViewModel<IssueEventModel> Events
-        {
-            get { return _events; }
-        }
+        public CollectionViewModel<IssueEventModel> Events { get; } = new CollectionViewModel<IssueEventModel>();
 
         protected override Task Load()
         {
@@ -159,9 +95,9 @@ namespace CodeHub.Core.ViewModels.Issues
             }
 
             var t1 = this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].Get(), response => Issue = response.Data);
-            Comments.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].GetComments()).FireAndForget();
-            Events.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].GetEvents()).FireAndForget();
-            this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[Repository].IsCollaborator(this.GetApplication().Account.Username), response => IsCollaborator = response.Data).FireAndForget();
+            Comments.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].GetComments()).ToBackground();
+            Events.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].GetEvents()).ToBackground();
+            this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[Repository].IsCollaborator(this.GetApplication().Account.Username), response => IsCollaborator = response.Data).ToBackground();
             return t1;
         }
 
@@ -170,28 +106,54 @@ namespace CodeHub.Core.ViewModels.Issues
             return (GetService<IMarkdownService>().Convert(str));
         }
 
-        public IssueViewModel(IApplicationService applicationService, IFeaturesService featuresService)
+        public IssueViewModel(string username, string repository, long id)
         {
-            _applicationService = applicationService;
-            _featuresService = featuresService;
-            this.Bind(x => x.Issue, true).Where(x => x != null).Select(x => string.Equals(x.State, "closed")).Subscribe(x => IsClosed = x);
+            _applicationService = GetService<IApplicationService>();
+            _featuresService = GetService<IFeaturesService>();
 
-            GoToOwner = ReactiveUI.ReactiveCommand.Create(this.Bind(x => x.Issue, true).Select(x => x != null));
-            GoToOwner.Subscribe(_ => ShowViewModel<UserViewModel>(new UserViewModel.NavObject { Username = Issue?.User?.Login }));
-        }
+            Username = username;
+            Repository = repository;
+            Id = id;
 
-        public void Init(NavObject navObject)
-        {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
-            Id = navObject.Id;
+            Title = "Issue #" + Id;
 
-            _editToken = Messenger.SubscribeOnMainThread<IssueEditMessage>(x =>
+            _editToken = Messenger.Subscribe<IssueEditMessage>(x =>
             {
                 if (x.Issue == null || x.Issue.Number != Issue.Number)
                     return;
                 Issue = x.Issue;
             });
+
+            this.WhenAnyValue(x => x.Issue.State)
+                .Where(x => x != null)
+                .Select(x => string.Equals(x, "closed"))
+                .Subscribe(x => IsClosed = x);
+
+            GoToOwner = ReactiveCommand.Create(this.WhenAnyValue(x => x.Issue.User.Login).Select(x => x != null));
+            GoToOwner
+                .Select(_ => new UserViewModel(Issue?.User?.Login))
+                .Subscribe(NavigateTo);
+
+            GoToAssigneeCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.IsCollaborator));
+            GoToMilestoneCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.IsCollaborator));
+            GoToLabelsCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.IsCollaborator));
+
+            GoToAssigneeCommand.Subscribe(
+                _ => NavigateTo(new IssueAssignedViewModel(Username, Repository, Id, true, Issue?.User)));
+
+            GoToMilestoneCommand.Subscribe(
+                _ => NavigateTo(new IssueMilestonesViewModel(Username, Repository, Id, true, Issue?.Milestone)));
+
+            GoToLabelsCommand.Subscribe(
+                _ => NavigateTo(new IssueLabelsViewModel(Username, Repository, Id, true, Issue?.Labels)));
+
+            GoToEditCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.IsCollaborator, x => x.Issue).Select(x => x.Item1 && x.Item2 != null));
+            GoToEditCommand.Subscribe(
+                _ => NavigateTo(new IssueEditViewModel(Username, Repository, Id, Issue)));
+
+            ToggleStateCommand = ReactiveCommand.CreateAsyncTask(
+                this.WhenAnyValue(x => x.Issue).Select(x => x != null),
+                t => ToggleState(Issue.State == "open"));
         }
 
         public async Task<bool> AddComment(string text)
@@ -215,7 +177,7 @@ namespace CodeHub.Core.ViewModels.Issues
             {
                 IsModifying = true;
                 var data = await this.GetApplication().Client.ExecuteAsync(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Issue.Number].UpdateState(closed ? "closed" : "open")); 
-                Messenger.Publish(new IssueEditMessage(this) { Issue = data.Data });
+                Messenger.Publish(new IssueEditMessage { Issue = data.Data });
             }
             catch (Exception e)
             {
@@ -225,13 +187,6 @@ namespace CodeHub.Core.ViewModels.Issues
             {
                 IsModifying = false;
             }
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
-            public long Id { get; set; }
         }
     }
 }

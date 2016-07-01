@@ -2,7 +2,7 @@
 using Foundation;
 using UIKit;
 
-namespace CodeHub.iOS.TableViewCells
+namespace CodeHub.TableViewCells
 {
     public partial class MultilinedCellView : UITableViewCell
     {

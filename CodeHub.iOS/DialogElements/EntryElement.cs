@@ -5,7 +5,7 @@ using Foundation;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class EntryElement : Element 
     {

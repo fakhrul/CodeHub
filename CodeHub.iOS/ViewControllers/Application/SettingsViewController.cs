@@ -1,34 +1,40 @@
 using System;
-using MvvmCross.Platform;
 using CodeHub.Core.Services;
-using CodeHub.iOS.ViewControllers;
 using CodeHub.Core.ViewModels.App;
-using CodeHub.iOS.Utilities;
+using CodeHub.Utilities;
 using UIKit;
 using Foundation;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
+using Splat;
+using ReactiveUI;
+using System.Reactive.Linq;
+using CodeHub.Views.Repositories;
 
-namespace CodeHub.iOS.ViewControllers.Application
+namespace CodeHub.ViewControllers.Application
 {
-    public class SettingsViewController : ViewModelDrivenDialogViewController
+    public class SettingsViewController : ViewModelDrivenDialogViewController<SettingsViewModel>
     {
         public SettingsViewController()
         {
+            ViewModel = new SettingsViewModel();
             Title = "Settings";
 
             OnActivation(d =>
             {
-                var vm = (SettingsViewModel)ViewModel;
-                d(vm.Bind(x => x.PushNotificationsEnabled).Subscribe(_ => CreateTable()));
-                d(vm.Bind(x => x.IsSaving).SubscribeStatus("Saving..."));
+                ViewModel.WhenAnyValue(x => x.PushNotificationsEnabled).Subscribe(_ => CreateTable()).AddTo(d);
+                ViewModel.WhenAnyValue(x => x.IsSaving).SubscribeStatus("Saving...").AddTo(d);
+                ViewModel
+                    .ShowUpgradeCommand
+                    .Subscribe(_ => NavigationController.PushViewController(new UpgradeViewController(), true))
+                    .AddTo(d);
                 CreateTable();
             });
         }
 
         private void CreateTable()
         {
-            var application = Mvx.Resolve<IApplicationService>();
-            var vm = (SettingsViewModel)ViewModel;
+            var application = Locator.Current.GetService<IApplicationService>();
+            var vm = ViewModel;
             var currentAccount = application.Account;
             var accountSection = new Section("Account");
 
@@ -54,14 +60,18 @@ namespace CodeHub.iOS.ViewControllers.Application
             { 
                 Accessory = UITableViewCellAccessory.DisclosureIndicator,
             };
-            startupView.Clicked.BindCommand(vm.GoToDefaultStartupViewCommand);
+            startupView.Clicked
+                       .Select(_ => new DefaultStartupViewController())
+                       .Subscribe(x => NavigationController.PushViewController(x, true));
 
             var pushNotifications = new BooleanElement("Push Notifications", vm.PushNotificationsEnabled);
             pushNotifications.Changed.Subscribe(e => vm.PushNotificationsEnabled = e);
             accountSection.Add(pushNotifications);
        
             var source = new StringElement("Source Code");
-            source.Clicked.BindCommand(vm.GoToSourceCodeCommand);
+            source.Clicked
+                  .Select(_ => new RepositoryViewController("thedillonb", "codehub"))
+                  .Subscribe(x => NavigationController.PushViewController(x, true));
 
             var follow = new StringElement("Follow On Twitter");
             follow.Clicked.Subscribe(_ => UIApplication.SharedApplication.OpenUrl(new NSUrl("https://twitter.com/CodeHubapp")));
@@ -74,7 +84,7 @@ namespace CodeHub.iOS.ViewControllers.Application
             if (vm.ShouldShowUpgrades)
             {
                 var upgrades = new StringElement("Upgrades");
-                upgrades.Clicked.BindCommand(vm.GoToUpgradesCommand);
+                upgrades.Clicked.InvokeCommand(vm.ShowUpgradeCommand);
                 aboutSection.Add(upgrades);
             }
 

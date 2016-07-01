@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Subjects;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class SplitButtonElement : Element
     {

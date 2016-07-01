@@ -2,18 +2,17 @@ using System.Linq;
 using UIKit;
 using CodeHub.Core.Data;
 using System.Threading.Tasks;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 using System.Reactive.Subjects;
 using System;
 using System.Reactive.Linq;
-using Foundation;
-using CodeHub.iOS.Utilities;
-using System.Net;
+using CodeHub.Utilities;
 
-namespace CodeHub.iOS.ViewControllers.Repositories
+namespace CodeHub.ViewControllers.Repositories
 {
     public class LanguagesViewController : DialogViewController
     {
+        private readonly LoadingIndicator _loadingIndicator = new LoadingIndicator();
         private readonly ISubject<Language> _languageSubject = new Subject<Language>();
 
         public IObservable<Language> Language
@@ -38,7 +37,7 @@ namespace CodeHub.iOS.ViewControllers.Repositories
 
         private async Task Load()
         {
-            NetworkActivity.PushNetworkActive();
+            _loadingIndicator.Up();
 
             try
             {
@@ -46,7 +45,7 @@ namespace CodeHub.iOS.ViewControllers.Repositories
             }
             finally
             {
-                NetworkActivity.PopNetworkActive();
+                _loadingIndicator.Down();
             }
         }
 

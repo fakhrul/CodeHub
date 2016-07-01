@@ -1,12 +1,9 @@
-namespace CodeHub.iOS.ViewControllers.Users
+using CodeHub.Core.ViewModels.Users;
+
+namespace CodeHub.ViewControllers.Users
 {
-    public class UserFollowingsViewController : BaseUserCollectionViewController
+    public class UserFollowingsViewController : UsersViewController<UserFollowingsViewModel>
     {
-        public UserFollowingsViewController()
-            : base("There are no followers.")
-        {
-            Title = "Following";
-        }
     }
 }
 

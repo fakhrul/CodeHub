@@ -1,13 +1,13 @@
 ﻿using System;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 using ReactiveUI;
 using UIKit;
 using System.Reactive;
 using System.Reactive.Linq;
-using CodeHub.iOS.Services;
+using CodeHub.Services;
 using System.Threading.Tasks;
 
-namespace CodeHub.iOS.ViewControllers.Gists
+namespace CodeHub.ViewControllers.Gists
 {
     public class GistFileEditViewController :  GistFileModifyViewController
     {
@@ -60,18 +60,37 @@ namespace CodeHub.iOS.ViewControllers.Gists
             Root.Add(new Section { titleElement, contentElement });
             TableView.TableFooterView = new UIView();
 
-            OnActivation(d => {
-                d(this.Bind(x => x.Filename, true).Subscribe(x => {
-                    Title = string.IsNullOrEmpty(x) ? "Gist File" : x;
-                    titleElement.Value = x;
-                }));
-                d(titleElement.Changed.Subscribe(x => Filename = x));
+            OnActivation(d => 
+            {
+                this.WhenAnyValue(x => x.Filename)
+                    .Subscribe(x => 
+                    {
+                        Title = string.IsNullOrEmpty(x) ? "Gist File" : x;
+                        titleElement.Value = x;
+                    })
+                    .AddTo(d);
+                
+                titleElement
+                    .Changed
+                    .Subscribe(x => Filename = x)
+                    .AddTo(d);
 
-                d(this.Bind(x => x.Content, true).Subscribe(x => contentElement.Value = x));
-                d(contentElement.Changed.Subscribe(x => Content = x));
+                this.WhenAnyValue(x => x.Content)
+                    .Subscribe(x => contentElement.Value = x)
+                    .AddTo(d);
+                
+                contentElement
+                    .Changed
+                    .Subscribe(x => Content = x)
+                    .AddTo(d);
 
-                d(SaveCommand.Subscribe(_ => ResignFirstResponder()));
-                d(this.Bind(x => x.SaveCommand, true).ToBarButtonItem(Images.Buttons.SaveButton, x => NavigationItem.RightBarButtonItem = x));
+                SaveCommand
+                    .Subscribe(_ => ResignFirstResponder())
+                    .AddTo(d);
+                
+                this.WhenAnyValue(x => x.SaveCommand)
+                    .ToBarButtonItem(Images.Buttons.SaveButton, x => NavigationItem.RightBarButtonItem = x)
+                    .AddTo(d);
             });
         }
     }

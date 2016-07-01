@@ -2,7 +2,7 @@
 using CoreGraphics;
 using System;
 
-namespace CodeHub.iOS.Views
+namespace CodeHub.Views
 {
     public class SlideUpTitleView : UIView
     {

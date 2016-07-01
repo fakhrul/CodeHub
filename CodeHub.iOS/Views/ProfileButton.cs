@@ -1,11 +1,11 @@
 using System;
 using UIKit;
 using CoreGraphics;
-using CodeHub.iOS;
+using CodeHub;
 using SDWebImage;
 using Foundation;
 
-namespace CodeHub.iOS.Views
+namespace CodeHub.Views
 {
     public class ProfileButton : UIButton
     {

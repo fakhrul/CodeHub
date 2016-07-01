@@ -2,7 +2,7 @@
 using UIKit;
 using CoreGraphics;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class MenuElement : StringElement
     {

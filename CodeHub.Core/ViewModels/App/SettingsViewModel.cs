@@ -1,10 +1,8 @@
-using CodeHub.Core.ViewModels;
-using System.Windows.Input;
 using CodeHub.Core.Services;
 using System;
 using System.Threading.Tasks;
-using CodeHub.Core.ViewModels.Repositories;
-using MvvmCross.Core.ViewModels;
+using ReactiveUI;
+using Splat;
 
 namespace CodeHub.Core.ViewModels.App
 {
@@ -12,9 +10,11 @@ namespace CodeHub.Core.ViewModels.App
     {
         private readonly IFeaturesService _featuresService;
 
-        public SettingsViewModel(IFeaturesService featuresService)
+        public IReactiveCommand<object> ShowUpgradeCommand { get; } = ReactiveCommand.Create();
+
+        public SettingsViewModel()
         {
-            _featuresService = featuresService;
+            _featuresService = Locator.Current.GetService<IFeaturesService>();
         }
 
         public string DefaultStartupViewName
@@ -25,21 +25,6 @@ namespace CodeHub.Core.ViewModels.App
         public bool ShouldShowUpgrades
         {
             get { return _featuresService.IsProEnabled; }
-        }
-
-        public ICommand GoToDefaultStartupViewCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<DefaultStartupViewModel>()); }
-        }
-
-        public ICommand GoToSourceCodeCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<RepositoryViewModel>(new RepositoryViewModel.NavObject { Repository = "codehub", Username = "thedillonb" })); }
-        }
-
-        public ICommand GoToUpgradesCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<UpgradeViewModel>()); }
         }
 
         private bool _isSaving;
@@ -68,9 +53,9 @@ namespace CodeHub.Core.ViewModels.App
                         .ContinueWith(t =>
                         {
                             if (t.Status == TaskStatus.RanToCompletion && t.Result)
-                                ShowViewModel<UpgradeViewModel>();
+                                ShowUpgradeCommand.ExecuteIfCan();
                         });
-                    RaisePropertyChanged(() => PushNotificationsEnabled);
+                    this.RaisePropertyChanged(nameof(PushNotificationsEnabled));
                 }
             }
         }
@@ -102,7 +87,7 @@ namespace CodeHub.Core.ViewModels.App
             }
             finally
             {
-                RaisePropertyChanged(() => PushNotificationsEnabled);
+                this.RaisePropertyChanged(nameof(PushNotificationsEnabled));
                 IsSaving = false;
             }
         }

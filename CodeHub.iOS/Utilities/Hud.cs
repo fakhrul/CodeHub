@@ -3,7 +3,7 @@ using UIKit;
 using System;
 using System.Reactive.Disposables;
 
-namespace CodeHub.iOS.Utilities
+namespace CodeHub.Utilities
 {
     public class Hud : IHud
     {

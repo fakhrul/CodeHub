@@ -1,5 +1,3 @@
-using System;
-using MvvmCross.Core.ViewModels;
 using System.Threading.Tasks;
 using CodeHub.Core.Messages;
 using System.Linq;
@@ -27,8 +25,8 @@ namespace CodeHub.Core.ViewModels.Issues
 
                 IsSaving = true;
                 var data = await this.GetApplication().Client.ExecuteAsync(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues.Create(IssueTitle, content, assignedTo, milestone, labels));
-                Messenger.Publish(new IssueAddMessage(this) { Issue = data.Data });
-                ChangePresentation(new MvxClosePresentationHint(this));
+                Messenger.Publish(new IssueAddMessage { Issue = data.Data });
+                Dismiss();
             }
             catch
             {
@@ -40,15 +38,10 @@ namespace CodeHub.Core.ViewModels.Issues
             }
         }
 
-        public void Init(NavObject navObject)
+        public IssueAddViewModel(string username, string repository)
+            :  base(username, repository)
         {
-            base.Init(navObject.Username, navObject.Repository);
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
+            Title = "New Issue";
         }
     }
 }

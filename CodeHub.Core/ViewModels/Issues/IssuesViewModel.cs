@@ -1,45 +1,43 @@
 using System;
 using System.Threading.Tasks;
-using CodeHub.Core.ViewModels;
 using CodeHub.Core.Filters;
 using GitHubSharp.Models;
-using System.Windows.Input;
-using MvvmCross.Core.ViewModels;
 using CodeHub.Core.Messages;
 using System.Linq;
-using MvvmCross.Plugins.Messenger;
+using ReactiveUI;
+using System.Reactive.Linq;
 
 namespace CodeHub.Core.ViewModels.Issues
 {
     public class IssuesViewModel : BaseIssuesViewModel<IssuesFilterModel>
     {
-        private MvxSubscriptionToken _addToken, _editToken;
+        private IDisposable _addToken, _editToken;
 
         public string Username { get; private set; }
 
         public string Repository { get; private set; }
 
-        public ICommand GoToNewIssueCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<IssueAddViewModel>(new IssueAddViewModel.NavObject { Username = Username, Repository = Repository })); }
-        }
+        public IReactiveCommand<object> GoToNewIssueCommand { get; } = ReactiveCommand.Create();
 
-        public void Init(NavObject nav)
+        public IssuesViewModel(string username, string repository)
         {
-            Username = nav.Username;
-            Repository = nav.Repository;
+            Username = username;
+            Repository = repository;
+
+            GoToNewIssueCommand.Subscribe(_ => NavigateTo(new IssueAddViewModel(Username, Repository)));
+
             _issues = new FilterableCollectionViewModel<IssueModel, IssuesFilterModel>("IssuesViewModel:" + Username + "/" + Repository);
             _issues.GroupingFunction = Group;
-            _issues.Bind(x => x.Filter).Subscribe(_ => LoadCommand.Execute(true));
+            _issues.WhenAnyValue(x => x.Filter).Skip(1).InvokeCommand(LoadCommand);
 
-            _addToken = Messenger.SubscribeOnMainThread<IssueAddMessage>(x =>
+            _addToken = Messenger.Subscribe<IssueAddMessage>(x =>
             {
                 if (x.Issue == null || !DoesIssueBelong(x.Issue))
                     return;
                 Issues.Items.Insert(0, x.Issue);
             });
 
-            _editToken = Messenger.SubscribeOnMainThread<IssueEditMessage>(x =>
+            _editToken = Messenger.Subscribe<IssueEditMessage>(x =>
             {
                 if (x.Issue == null || !DoesIssueBelong(x.Issue))
                     return;

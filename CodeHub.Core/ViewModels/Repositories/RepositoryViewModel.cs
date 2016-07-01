@@ -1,19 +1,24 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Windows.Input;
-using MvvmCross.Core.ViewModels;
 using GitHubSharp.Models;
-using CodeHub.Core.ViewModels.User;
+using CodeHub.Core.ViewModels.Users;
 using CodeHub.Core.ViewModels.Events;
 using CodeHub.Core.ViewModels.Changesets;
+using ReactiveUI;
+using System.Reactive.Linq;
+using CodeHub.Core.ViewModels.Issues;
+using CodeHub.Core.ViewModels.PullRequests;
+using CodeHub.Core.ViewModels.Source;
+using System.Reactive;
 
 namespace CodeHub.Core.ViewModels.Repositories
 {
     public class RepositoryViewModel : LoadableViewModel
     {
-        public string Username { get; private set; }
+        public string Username { get; }
 
-        public string RepositoryName { get; private set; }
+        public string RepositoryName { get; }
 
         public string ImageUrl { get; set; }
 
@@ -52,84 +57,74 @@ namespace CodeHub.Core.ViewModels.Repositories
             private set { this.RaiseAndSetIfChanged(ref _branches, value); }
         }
 
-        public void Init(NavObject navObject)
+        public RepositoryViewModel(string username, string repository)
         {
-            Username = navObject.Username;
-            Title = RepositoryName = navObject.Repository;
+            Username = username;
+            Title = RepositoryName = repository;
+
+            GoToOwnerCommand.Subscribe(_ => NavigateTo(new UserViewModel(Username)));
+
+            GoToForkParentCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.Repository.Parent).Select(x => x != null));
+            GoToForkParentCommand.Subscribe(_ => NavigateTo(new RepositoryViewModel(Repository.Parent.Owner.Login, Repository.Parent.Name)));
+
+            GoToStargazersCommand.Subscribe(_ => NavigateTo(new RepositoryStargazersViewModel(Username, RepositoryName)));
+            GoToWatchersCommand.Subscribe(_ => NavigateTo(new RepositoryWatchersViewModel(Username, RepositoryName)));
+            GoToForkedCommand.Subscribe(_ => NavigateTo(new RepositoriesForkedViewModel(Username, RepositoryName)));
+            GoToEventsCommand.Subscribe(_ => NavigateTo(new RepositoryEventsViewModel(Username, RepositoryName)));
+            GoToIssuesCommand.Subscribe(_ => NavigateTo(new IssuesViewModel(Username, RepositoryName)));
+            GoToReadmeCommand.Subscribe(_ => NavigateTo(new ReadmeViewModel(Username, RepositoryName)));
+            GoToCommitsCommand.Subscribe(_ => ShowCommits());
+            GoToPullRequestsCommand.Subscribe(_ => NavigateTo(new PullRequestsViewModel(Username, RepositoryName)));
+            GoToSourceCommand.Subscribe(_ => NavigateTo(new BranchesAndTagsViewModel(Username, RepositoryName)));
+
+            GoToHtmlUrlCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.Repository.HtmlUrl).Select(x => !string.IsNullOrEmpty(x)));
+            GoToHtmlUrlCommand.Subscribe(_ => NavigateTo(new WebBrowserViewModel(Repository.HtmlUrl)));
+
+            PinCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.Repository).Select(x => x != null));
+            PinCommand.Subscribe(_ => PinRepository());
+
+            ToggleWatchCommand = ReactiveCommand.CreateAsyncTask(
+                this.WhenAnyValue(x => x.IsWatched).Select(x => x != null),
+                t => ToggleWatch());
+
+            ToggleStarCommand = ReactiveCommand.CreateAsyncTask(
+                this.WhenAnyValue(x => x.IsStarred).Select(x => x != null),
+                t => ToggleStar());
         }
 
-        public ICommand GoToOwnerCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<UserViewModel>(new UserViewModel.NavObject { Username = Username })); }
-        }
+        public IReactiveCommand<object> GoToOwnerCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToForkParentCommand
-        {
-            get { return new MvxCommand<RepositoryModel>(x => ShowViewModel<RepositoryViewModel>(new RepositoryViewModel.NavObject { Username = x.Owner.Login, Repository = x.Name })); }
-        }
+        public IReactiveCommand<object> GoToForkParentCommand { get; }
 
-        public ICommand GoToStargazersCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<RepositoryStargazersViewModel>(new RepositoryStargazersViewModel.NavObject { User = Username, Repository = RepositoryName })); }
-        }
+        public IReactiveCommand<object> GoToStargazersCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToWatchersCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<RepositoryWatchersViewModel>(new RepositoryWatchersViewModel.NavObject { User = Username, Repository = RepositoryName })); }
-        }
+        public IReactiveCommand<object> GoToWatchersCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToForkedCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<RepositoriesForkedViewModel>(new RepositoriesForkedViewModel.NavObject { User = Username, Repository = RepositoryName })); }
-        }
+        public IReactiveCommand<object> GoToForkedCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToEventsCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<RepositoryEventsViewModel>(new RepositoryEventsViewModel.NavObject { Username = Username, Repository = RepositoryName })); }
-        }
+        public IReactiveCommand<object> GoToEventsCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToIssuesCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<Issues.IssuesViewModel>(new Issues.IssuesViewModel.NavObject { Username = Username, Repository = RepositoryName })); }
-        }
+        public IReactiveCommand<object> GoToIssuesCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToReadmeCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<ReadmeViewModel>(new ReadmeViewModel.NavObject { Username = Username, Repository = RepositoryName })); }
-        }
+        public IReactiveCommand<object> GoToReadmeCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToCommitsCommand
-        {
-            get { return new MvxCommand(ShowCommits);}
-        }
+        public IReactiveCommand<object> GoToCommitsCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToPullRequestsCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<PullRequests.PullRequestsViewModel>(new PullRequests.PullRequestsViewModel.NavObject { Username = Username, Repository = RepositoryName })); }
-        }
+        public IReactiveCommand<object> GoToPullRequestsCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToSourceCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<Source.BranchesAndTagsViewModel>(new Source.BranchesAndTagsViewModel.NavObject { Username = Username, Repository = RepositoryName })); }
-        }
+        public IReactiveCommand<object> GoToSourceCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToHtmlUrlCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<WebBrowserViewModel>(new WebBrowserViewModel.NavObject { Url = Repository.HtmlUrl }), () => Repository != null); }
-        }
+        public IReactiveCommand<object> GoToHtmlUrlCommand { get; }
 
         private void ShowCommits()
         {
             if (Branches != null && Branches.Count == 1)
-                ShowViewModel<ChangesetsViewModel>(new ChangesetsViewModel.NavObject {Username = Username, Repository = RepositoryName});
+                NavigateTo(new ChangesetsViewModel(Username, RepositoryName, null));
             else
-                ShowViewModel<Source.ChangesetBranchesViewModel>(new Source.ChangesetBranchesViewModel.NavObject {Username = Username, Repository = RepositoryName});
+                NavigateTo(new ChangesetBranchesViewModel(Username, RepositoryName));
         }
 
-        public ICommand PinCommand
-        {
-            get { return new MvxCommand(PinRepository, () => Repository != null); }
-        }
+        public IReactiveCommand<object> PinCommand { get; }
 
         private void PinRepository()
         {
@@ -150,24 +145,21 @@ namespace CodeHub.Core.ViewModels.Repositories
             var t1 = this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[RepositoryName].Get(), response => Repository = response.Data);
 
             this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[RepositoryName].GetReadme(), 
-                response => Readme = response.Data).FireAndForget();
+                response => Readme = response.Data).ToBackground();
 
             this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[RepositoryName].GetBranches(), 
-                response => Branches = response.Data).FireAndForget();
+                response => Branches = response.Data).ToBackground();
 
             this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[RepositoryName].IsWatching(), 
-                response => IsWatched = response.Data).FireAndForget();
+                response => IsWatched = response.Data).ToBackground();
          
             this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[RepositoryName].IsStarred(), 
-                response => IsStarred = response.Data).FireAndForget();
+                response => IsStarred = response.Data).ToBackground();
 
             return t1;
         }
 
-        public ICommand ToggleWatchCommand
-        {
-            get { return new MvxCommand(() => ToggleWatch(), () => IsWatched != null); }
-        }
+        public IReactiveCommand<Unit> ToggleWatchCommand { get; }
 
         private async Task ToggleWatch()
         {
@@ -188,10 +180,7 @@ namespace CodeHub.Core.ViewModels.Repositories
             }
         }
 
-        public ICommand ToggleStarCommand
-        {
-            get { return new MvxCommand(() => ToggleStar(), () => IsStarred != null); }
-        }
+        public IReactiveCommand<Unit> ToggleStarCommand { get; }
 
         public bool IsPinned
         {
@@ -215,12 +204,6 @@ namespace CodeHub.Core.ViewModels.Repositories
             {
                 DisplayAlert("Unable to " + (IsStarred.Value ? "unstar" : "star") + " this repository! Please try again.");
             }
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
         }
     }
 }

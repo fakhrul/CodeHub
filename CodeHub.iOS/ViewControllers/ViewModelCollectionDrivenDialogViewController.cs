@@ -1,19 +1,21 @@
 using System;
 using System.Linq;
 using CodeHub.Core.ViewModels;
-using CodeHub.iOS.Utilities;
-using CodeHub.iOS.ViewControllers;
+using CodeHub.Utilities;
 using UIKit;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CodeHub.iOS.Services;
-using CodeHub.iOS.DialogElements;
+using CodeHub.Services;
+using CodeHub.DialogElements;
 using Foundation;
 using CoreGraphics;
+using ReactiveUI;
+using System.Reactive.Linq;
 
-namespace CodeHub.iOS.ViewControllers
+namespace CodeHub.ViewControllers
 {
-    public abstract class ViewModelCollectionDrivenDialogViewController : ViewModelDrivenDialogViewController
+    public abstract class ViewModelCollectionDrivenDialogViewController<TViewModel> : ViewModelDrivenDialogViewController<TViewModel>
+        where TViewModel : class
     {
         private static NSObject _dumb = new NSObject();
 
@@ -67,9 +69,9 @@ namespace CodeHub.iOS.ViewControllers
                 }
             };
 
-            viewModel.Bind(x => x.GroupingFunction).Subscribe(_ => updateDel());
-            viewModel.Bind(x => x.FilteringFunction).Subscribe(_ => updateDel());
-            viewModel.Bind(x => x.SortingFunction).Subscribe(_ => updateDel());
+            viewModel.WhenAnyValue(x => x.GroupingFunction).Skip(1).Subscribe(_ => updateDel());
+            viewModel.WhenAnyValue(x => x.FilteringFunction).Skip(1).Subscribe(_ => updateDel());
+            viewModel.WhenAnyValue(x => x.SortingFunction).Skip(1).Subscribe(_ => updateDel());
 
             //The CollectionViewModel binds all of the collection events from the observablecollection + more
             //So just listen to it.
@@ -97,14 +99,16 @@ namespace CodeHub.iOS.ViewControllers
                 EmptyView.Value.Frame = new CGRect(0, 0, TableView.Bounds.Width, TableView.Bounds.Height);
                 TableView.SeparatorStyle = UITableViewCellSeparatorStyle.None;
                 TableView.BringSubviewToFront(EmptyView.Value);
-                TableView.TableHeaderView.Do(y => y.Hidden = true);
+                if (TableView.TableHeaderView != null)
+                    TableView.TableHeaderView.Hidden = true;
                 UIView.Animate(0.2f, 0f, UIViewAnimationOptions.AllowUserInteraction | UIViewAnimationOptions.CurveEaseIn | UIViewAnimationOptions.BeginFromCurrentState,
                     () => EmptyView.Value.Alpha = 1.0f, null);
             }
             else if (EmptyView.IsValueCreated)
             {
                 EmptyView.Value.UserInteractionEnabled = false;
-                TableView.TableHeaderView.Do(y => y.Hidden = false);
+                if (TableView.TableHeaderView != null)
+                    TableView.TableHeaderView.Hidden = false;
                 TableView.SeparatorStyle = UITableViewCellSeparatorStyle.SingleLine;
                 UIView.Animate(0.1f, 0f, UIViewAnimationOptions.AllowUserInteraction | UIViewAnimationOptions.CurveEaseIn | UIViewAnimationOptions.BeginFromCurrentState,
                     () => EmptyView.Value.Alpha = 0f, null);
@@ -165,6 +169,7 @@ namespace CodeHub.iOS.ViewControllers
         {
             var weakAction = new WeakReference<Action>(moreAction);
             ICollection<Section> newSections = new LinkedList<Section>(sections);
+            var loadingIndicator = new LoadingIndicator();
 
             if (moreAction != null)
             {
@@ -174,7 +179,7 @@ namespace CodeHub.iOS.ViewControllers
                 {
                     try
                     {
-                        NetworkActivity.PushNetworkActive();
+                        loadingIndicator.Up();
 
                         var a = weakAction.Get();
                         if (a != null)
@@ -189,7 +194,7 @@ namespace CodeHub.iOS.ViewControllers
                     }
                     finally
                     {
-                        NetworkActivity.PopNetworkActive();
+                        loadingIndicator.Down();
                     }
 
                 };    

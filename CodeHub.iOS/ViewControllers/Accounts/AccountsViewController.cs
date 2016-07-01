@@ -1,23 +1,21 @@
-using MvvmCross.Platform;
 using CodeHub.Core.Services;
-using CodeHub.iOS.ViewControllers;
 using UIKit;
 using Foundation;
 using System;
 using CodeHub.Core.Data;
 using CoreGraphics;
-using CodeHub.Core.ViewModels.Accounts;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 using System.Linq;
 using ReactiveUI;
 using CodeHub.Core.Messages;
+using Splat;
 
-namespace CodeHub.iOS.ViewControllers.Accounts
+namespace CodeHub.ViewControllers.Accounts
 {
     public class AccountsViewController : DialogViewController
     {
-        private readonly IAccountsService _accountsService = Mvx.Resolve<IAccountsService>();
-        private readonly IApplicationService _applicationService = Mvx.Resolve<IApplicationService>();
+        private readonly IAccountsService _accountsService = Locator.Current.GetService<IAccountsService>();
+        private readonly IApplicationService _applicationService = Locator.Current.GetService<IApplicationService>();
 
         public AccountsViewController() : base(UITableViewStyle.Plain)
         {
@@ -25,7 +23,7 @@ namespace CodeHub.iOS.ViewControllers.Accounts
 
             var addButton = new UIBarButtonItem(UIBarButtonSystemItem.Add);
             NavigationItem.RightBarButtonItem = addButton;
-            OnActivation(d => d(addButton.GetClickedObservable().Subscribe(_ => AddAccount())));
+            OnActivation(d => addButton.GetClickedObservable().Subscribe(_ => AddAccount()).AddTo(d));
         }
 
         private void AddAccount()
@@ -50,7 +48,7 @@ namespace CodeHub.iOS.ViewControllers.Accounts
         {
             base.ViewWillAppear(animated);
 
-            var accountsService = Mvx.Resolve<IAccountsService>();
+            var accountsService = Locator.Current.GetService<IAccountsService>();
             var weakVm = new WeakReference<AccountsViewController>(this);
             var accountSection = new Section();
             accountSection.AddAll(accountsService.Select(account =>

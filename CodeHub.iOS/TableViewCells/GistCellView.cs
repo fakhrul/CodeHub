@@ -1,21 +1,17 @@
 using System;
 using Foundation;
 using UIKit;
-using CodeHub.Core.Utilities;
-using ObjCRuntime;
-using Humanizer;
+using CodeHub.Core.ViewModels.Gists;
+using ReactiveUI;
+using System.Reactive.Linq;
 
-namespace CodeHub.iOS.TableViewCells
+namespace CodeHub.TableViewCells
 {
-    public partial class GistCellView : UITableViewCell
+    public partial class GistCellView : BaseTableViewCell<GistItemViewModel>
     {
         public static readonly UINib Nib = UINib.FromName("GistCellView", NSBundle.MainBundle);
         public static readonly NSString Key = new NSString("GistCellView");
         private static nfloat DefaultContentConstraintSize = 0.0f;
-
-        public GistCellView()
-        {
-        }
 
         public GistCellView(IntPtr handle) 
             : base(handle)
@@ -34,22 +30,15 @@ namespace CodeHub.iOS.TableViewCells
             TimeLabel.TextColor = Theme.CurrentTheme.MainSubtitleColor;
             ContentLabel.TextColor = Theme.CurrentTheme.MainTextColor;
             DefaultContentConstraintSize = ContentConstraint.Constant;
-        }
 
-        public static GistCellView Create()
-        {
-            var cell = new GistCellView();
-            var views = NSBundle.MainBundle.LoadNib("GistCellView", cell, null);
-            return Runtime.GetNSObject( views.ValueAt(0) ) as GistCellView;
-        }
-
-        public void Set(string title, string description, DateTimeOffset time, GitHubAvatar avatar)
-        {
-            TitleLabel.Text = title;
-            ContentLabel.Text = description;
-            TimeLabel.Text = time.Humanize();
-            ContentConstraint.Constant = string.IsNullOrEmpty(description) ? 0f : DefaultContentConstraintSize;
-            MainImageView.SetAvatar(avatar);
+            this.WhenAnyValue(x => x.ViewModel).Where(x => x != null).Subscribe(x =>
+            {
+                TitleLabel.Text = x.Title;
+                ContentLabel.Text = x.Description;
+                TimeLabel.Text = x.UpdatedString;
+                ContentConstraint.Constant = string.IsNullOrEmpty(x.Description) ? 0f : DefaultContentConstraintSize;
+                MainImageView.SetAvatar(x.Avatar);
+            });
         }
 
         protected override void Dispose(bool disposing)

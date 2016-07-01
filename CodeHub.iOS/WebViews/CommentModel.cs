@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 
-namespace CodeHub.iOS.WebViews
+namespace CodeHub.WebViews
 {
     public class Comment
     {

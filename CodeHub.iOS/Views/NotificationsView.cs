@@ -1,16 +1,17 @@
 using System;
-using CodeHub.iOS.ViewControllers;
+using CodeHub.ViewControllers;
 using UIKit;
-using CodeHub.iOS.Utilities;
+using CodeHub.Utilities;
 using CodeHub.Core.ViewModels.Notifications;
 using Humanizer;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 using GitHubSharp.Models;
 using System.Reactive.Linq;
+using ReactiveUI;
 
-namespace CodeHub.iOS.Views
+namespace CodeHub.Views
 {
-    public class NotificationsView : ViewModelCollectionDrivenDialogViewController
+    public class NotificationsView : ViewModelCollectionDrivenDialogViewController<NotificationsViewModel>
     {
         private readonly UISegmentedControl _viewSegment;
         private readonly UIBarButtonItem _segmentBarButton;
@@ -36,10 +37,9 @@ namespace CodeHub.iOS.Views
             var checkButton = new UIBarButtonItem { Image = Images.Buttons.CheckButton };
             NavigationItem.RightBarButtonItem = checkButton;
 
-            var vm = (NotificationsViewModel)ViewModel;
-            var weakVm = new WeakReference<NotificationsViewModel>(vm);
+            var weakVm = new WeakReference<NotificationsViewModel>(ViewModel);
 
-            BindCollection(vm.Notifications, x =>
+            BindCollection(ViewModel.Notifications, x =>
             {
                 var el = new StringElement(x.Subject.Title, x.UpdatedAt.Humanize(), UITableViewCellStyle.Subtitle) { Accessory = UITableViewCellAccessory.DisclosureIndicator };
 
@@ -59,15 +59,15 @@ namespace CodeHub.iOS.Views
                 return el;
             });
 
-            var o = Observable.FromEventPattern(t => vm.ReadAllCommand.CanExecuteChanged += t, t => vm.ReadAllCommand.CanExecuteChanged -= t);
+            var o = Observable.FromEventPattern(t => ViewModel.ReadAllCommand.CanExecuteChanged += t, t => ViewModel.ReadAllCommand.CanExecuteChanged -= t);
 
             OnActivation(d =>
             {
-                d(checkButton.GetClickedObservable().BindCommand(vm.ReadAllCommand));
-                d(vm.Bind(x => x.IsMarking).SubscribeStatus("Marking..."));
-                d(vm.Bind(x => x.ShownIndex, true).Subscribe(x => _viewSegment.SelectedSegment = (nint)x));
-                d(_viewSegment.GetChangedObservable().Subscribe(x => vm.ShownIndex = x));
-                d(o.Subscribe(_ => NavigationItem.RightBarButtonItem.Enabled = vm.ReadAllCommand.CanExecute(null)));
+                checkButton.GetClickedObservable().InvokeCommand(ViewModel.ReadAllCommand).AddTo(d);
+                ViewModel.WhenAnyValue(x => x.IsMarking).SubscribeStatus("Marking...").AddTo(d);
+                ViewModel.WhenAnyValue(x => x.ShownIndex).Subscribe(x => _viewSegment.SelectedSegment = (nint)x).AddTo(d);
+                _viewSegment.GetChangedObservable().Subscribe(x => ViewModel.ShownIndex = x).AddTo(d);
+                o.Subscribe(_ => NavigationItem.RightBarButtonItem.Enabled = ViewModel.ReadAllCommand.CanExecute(null)).AddTo(d);
             });
         }
 

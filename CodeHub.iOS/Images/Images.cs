@@ -1,7 +1,7 @@
 using UIKit;
 using MonoTouch.UIKit;
 
-namespace CodeHub.iOS
+namespace CodeHub
 {
     public static class Images
     {
@@ -29,8 +29,8 @@ namespace CodeHub.iOS
 
         public static class Web
         {
-            public static UIImage BackButton { get { return UIImageHelper.FromFileAuto("Images/Web/back"); } }
-            public static UIImage FowardButton { get { return UIImageHelper.FromFileAuto("Images/Web/forward"); } }
+            public static UIImage Back { get { return UIImageHelper.FromFileAuto("Images/Web/back"); } }
+            public static UIImage Forward { get { return UIImageHelper.FromFileAuto("Images/Web/forward"); } }
         }
 
         private static UIImage CreateTemplateFromAuto(string path)

@@ -1,11 +1,9 @@
 using GitHubSharp.Models;
-using MvvmCross.Plugins.Messenger;
 
 namespace CodeHub.Core.Messages
 {
-    public class IssueEditMessage : MvxMessage
+    public class IssueEditMessage
     {
-        public IssueEditMessage(object sender) : base(sender) {}
         public IssueModel Issue;
     }
 }

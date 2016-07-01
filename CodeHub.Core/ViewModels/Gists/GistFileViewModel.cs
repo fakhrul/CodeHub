@@ -1,9 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using GitHubSharp.Models;
-using CodeHub.Core.ViewModels;
-using CodeHub.Core.Services;
-using MvvmCross.Core.ViewModels;
+using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels.Gists
 {
@@ -21,32 +19,31 @@ namespace CodeHub.Core.ViewModels.Gists
             private set { this.RaiseAndSetIfChanged(ref _gist, value); }
         }
 
-        public void Init(NavObject navObject)
+        public GistFileViewModel(GistFileModel gist)
         {
             //Create the filename
-            var fileName = System.IO.Path.GetFileName(navObject.Filename);
+            var fileName = System.IO.Path.GetFileName(gist.Filename);
             if (fileName == null)
-                fileName = navObject.Filename.Substring(navObject.Filename.LastIndexOf('/') + 1);
+                fileName = gist.Filename.Substring(gist.Filename.LastIndexOf('/') + 1);
 
             //Create the temp file path
             Title = fileName;
             FileName = fileName;
 
-            _id = navObject.GistId;
-            _filename = navObject.Filename;
+            //_id = gist.
+            _filename = gist.Filename;
 
             //Grab the data
-            Gist = GetService<IViewModelTxService>().Get() as GistFileModel;
+            Gist = gist;
         }
 
         protected override async Task Load()
         {
-            
-            if (Gist == null)
-            {
-                var data = await this.GetApplication().Client.ExecuteAsync(this.GetApplication().Client.Gists[_id].Get());
-                Gist = data.Data.Files[_filename];
-            }
+            //if (Gist == null)
+            //{
+            //    var data = await this.GetApplication().Client.ExecuteAsync(this.GetApplication().Client.Gists[_id].Get());
+            //    Gist = data.Data.Files[_filename];
+            //}
 
             if (Gist == null || Gist.Content == null)
                 throw new Exception("Unable to retreive gist!");
@@ -57,12 +54,6 @@ namespace CodeHub.Core.ViewModels.Gists
             var filepath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), FileName);
             System.IO.File.WriteAllText(filepath, Gist.Content, System.Text.Encoding.UTF8);
             ContentPath = FilePath = filepath;
-        }
-
-        public class NavObject
-        {
-            public string GistId { get; set; }
-            public string Filename { get; set; }
         }
     }
 }

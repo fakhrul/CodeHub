@@ -7,7 +7,7 @@ using System.Reactive.Subjects;
 using System.Reactive;
 using System.Reactive.Linq;
 
-namespace CodeHub.iOS.Views
+namespace CodeHub.Views
 {
     public class ImageAndTitleHeaderView : UIView
     {

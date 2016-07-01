@@ -1,69 +1,64 @@
-using System.Windows.Input;
-using MvvmCross.Core.ViewModels;
-using CodeHub.Core.ViewModels;
-using GitHubSharp.Models;
-using System.Threading.Tasks;
-using CodeHub.Core.ViewModels.Repositories;
 using System;
+using GitHubSharp.Models;
+using ReactiveUI;
+using System.Reactive;
+using System.Reactive.Linq;
+using CodeHub.Core.Services;
+using CodeHub.Core.Utilities;
+using CodeHub.Core.Utils;
 
 namespace CodeHub.Core.ViewModels.Repositories
 {
-    public class RepositoriesExploreViewModel : BaseViewModel
+    public class RepositoriesExploreViewModel : BaseViewModel, IListViewModel<RepositoryItemViewModel>
     {
-        private readonly CollectionViewModel<RepositorySearchModel.RepositoryModel> _repositories = new CollectionViewModel<RepositorySearchModel.RepositoryModel>();
         private string _searchText;
-
-        public bool ShowRepositoryDescription
-        {
-            get { return this.GetApplication().Account.ShowRepositoryDescriptionInList; }
-        }
-
-        public CollectionViewModel<RepositorySearchModel.RepositoryModel> Repositories
-        {
-            get { return _repositories; }
-        }
-
         public string SearchText
         {
             get { return _searchText; }
             set { this.RaiseAndSetIfChanged(ref _searchText, value); }
         }
 
-        private bool _isSearching;
-        public bool IsSearching
-        {
-            get { return _isSearching; }
-            private set { this.RaiseAndSetIfChanged(ref _isSearching, value); }
-        }
+        public IReactiveCommand<Unit> SearchCommand { get; }
 
-        public ICommand GoToRepositoryCommand
-        {
-            get { return new MvxCommand<RepositorySearchModel.RepositoryModel>(x => ShowViewModel<RepositoryViewModel>(new RepositoryViewModel.NavObject { Username = x.Owner.Login, Repository = x.Name })); }
-        }
+        public IReadOnlyReactiveList<RepositoryItemViewModel> Items { get; }
 
-        public ICommand SearchCommand
-        {
-            get { return new MvxCommand(() => Search(), () => !string.IsNullOrEmpty(SearchText)); }
-        }
+        public bool IsEmpty => false;
 
-        private async Task Search()
+        public RepositoriesExploreViewModel()
         {
-            try
+            var applicationService = GetService<IApplicationService>();
+            var showDescription = applicationService.Account.ShowRepositoryDescriptionInList;
+
+            Title = "Explore";
+
+            var repositories = new ReactiveList<RepositorySearchModel.RepositoryModel>();
+            Items = repositories.CreateDerivedCollection(x =>
             {
-                IsSearching = true;
+                var description = showDescription ? x.Description : string.Empty;
+                var viewModel = new RepositoryItemViewModel(x.Name, description, x.Owner?.Login, x.StargazersCount, x.ForksCount, new GitHubAvatar(x.Owner?.AvatarUrl));
+                viewModel.GoToCommand.Subscribe(_ =>
+                {
+                    var id = RepositoryIdentifier.FromFullName(x.FullName);
+                    NavigateTo(new RepositoryViewModel(id.Owner, id.Name));
+                });
+                return viewModel;
+            });
 
-                var request = this.GetApplication().Client.Repositories.SearchRepositories(new [] { SearchText }, new string[] { });
-                var response = await this.GetApplication().Client.ExecuteAsync(request);
-                Repositories.Items.Reset(response.Data.Items);
-            }
-            catch
-            {
-                DisplayAlert("Unable to search for repositories. Please try again.");
-            }
-            finally
-            {
-                IsSearching = false;
-            }
+            SearchCommand = ReactiveCommand.CreateAsyncTask(
+                this.WhenAnyValue(x => x.SearchText).Select(x => !string.IsNullOrEmpty(x)),
+                async _ =>
+                {
+                    try
+                    {
+                        var request = this.GetApplication().Client.Repositories.SearchRepositories(new[] { SearchText }, new string[] { });
+                        var response = await this.GetApplication().Client.ExecuteAsync(request);
+                        repositories.Reset(response.Data.Items);
+                    }
+                    catch
+                    {
+                        DisplayAlert("Unable to search for repositories. Please try again.");
+                    }
+                });
         }
     }
 }

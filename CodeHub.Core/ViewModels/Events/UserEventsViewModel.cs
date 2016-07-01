@@ -6,25 +6,16 @@ namespace CodeHub.Core.ViewModels.Events
 {
     public class UserEventsViewModel : BaseEventsViewModel
     {
-        public string Username
-        {
-            get;
-            private set;
-        }
+        public string Username { get; }
 
-        public void Init(NavObject navObject)
+        public UserEventsViewModel(string username)
         {
-            Username = navObject.Username;
+            Username = username;
         }
 
         protected override GitHubRequest<List<EventModel>> CreateRequest(int page, int perPage)
         {
             return this.GetApplication().Client.Users[Username].GetEvents(page, perPage);
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
         }
     }
 }

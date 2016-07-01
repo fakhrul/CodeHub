@@ -2,7 +2,7 @@
 using UIKit;
 using System.IO;
 using Foundation;
-using CodeHub.iOS;
+using CodeHub;
 
 // Analysis disable once CheckNamespace
 namespace CodeHub

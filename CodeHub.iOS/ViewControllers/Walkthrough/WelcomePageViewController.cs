@@ -3,7 +3,7 @@ using UIKit;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CodeHub.iOS.ViewControllers.Walkthrough
+namespace CodeHub.ViewControllers.Walkthrough
 {
     public class WelcomePageViewController : BaseViewController
     {

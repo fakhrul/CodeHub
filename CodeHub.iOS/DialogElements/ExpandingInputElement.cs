@@ -3,10 +3,10 @@ using UIKit;
 using Foundation;
 using CoreGraphics;
 using System.Reactive.Linq;
-using CodeHub.iOS.Views;
+using CodeHub.Views;
 using System.Reactive.Subjects;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class ExpandingInputElement : Element, IElementSizing
     {

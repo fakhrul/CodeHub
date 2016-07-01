@@ -2,7 +2,7 @@ using CodeHub.Core.Services;
 using System.IO;
 using System;
 
-namespace CodeHub.iOS.Services
+namespace CodeHub.Services
 {
     public class AccountPreferencesService : IAccountPreferencesService
     {

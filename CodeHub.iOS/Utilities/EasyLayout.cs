@@ -28,7 +28,7 @@ using System.Reflection;
 
 using UIKit;
 
-namespace CodeHub.iOS
+namespace CodeHub
 {
     public static class Layout
     {

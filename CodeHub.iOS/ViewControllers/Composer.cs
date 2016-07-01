@@ -1,11 +1,11 @@
 using System;
 using CoreGraphics;
-using CodeHub.iOS.Views;
+using CodeHub.Views;
 using Foundation;
 using UIKit;
 using System.Collections.Generic;
 
-namespace CodeHub.iOS.ViewControllers
+namespace CodeHub.ViewControllers
 {
     public class Composer : BaseViewController
     {
@@ -48,8 +48,8 @@ namespace CodeHub.iOS.ViewControllers
 
             OnActivation(d =>
             {
-                d(close.GetClickedObservable().Subscribe(_ => CloseComposer()));
-                d(SendItem.GetClickedObservable().Subscribe(_ => PostCallback()));
+                close.GetClickedObservable().Subscribe(_ => CloseComposer()).AddTo(d);
+                SendItem.GetClickedObservable().Subscribe(_ => PostCallback()).AddTo(d);
             });
         }
 

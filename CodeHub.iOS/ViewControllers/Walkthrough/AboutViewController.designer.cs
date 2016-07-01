@@ -7,7 +7,7 @@
 using Foundation;
 using System.CodeDom.Compiler;
 
-namespace CodeHub.iOS.ViewControllers.Walkthrough
+namespace CodeHub.ViewControllers.Walkthrough
 {
     [Register ("AboutViewController")]
     partial class AboutViewController

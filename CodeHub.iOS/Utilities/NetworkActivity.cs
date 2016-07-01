@@ -1,41 +1,41 @@
-﻿using UIKit;
+﻿using System;
+using System.Reactive.Disposables;
+using CodeHub.Services;
 
-namespace CodeHub.iOS.Utilities
+namespace CodeHub.Utilities
 {
-    public static class NetworkActivity
+    public class LoadingIndicator
     {
-        /// <summary>
-        ///   A shortcut to the main application
-        /// </summary>
-        public static UIApplication MainApp = UIApplication.SharedApplication;
+        private readonly LoadingIndicatorService _loading = new LoadingIndicatorService();
+        private int _value;
 
-        //
-        // Since we are a multithreaded application and we could have many
-        // different outgoing network connections (api.twitter, images,
-        // searches) we need a centralized API to keep the network visibility
-        // indicator state
-        //
-        static readonly object NetworkLock = new object ();
-        static int _active;
-
-        public static void PushNetworkActive ()
+        public void Up()
         {
-            lock (NetworkLock){
-                _active++;
-                MainApp.NetworkActivityIndicatorVisible = true;
+            _value++;
+            _loading.Up();
+        }
+
+        public void Down()
+        {
+            if (_value == 0)
+                return;
+            _value--;
+            _loading.Down();
+        }
+
+        ~LoadingIndicator()
+        {
+            for (var i = 0; i < _value; i++)
+            {
+                _loading.Down();
             }
         }
 
-        public static void PopNetworkActive ()
+        public static IDisposable Create()
         {
-            lock (NetworkLock){
-                if (_active == 0)
-                    return;
-
-                _active--;
-                if (_active == 0)
-                    MainApp.NetworkActivityIndicatorVisible = false;
-            }
+            var loadingIndicator = new LoadingIndicator();
+            loadingIndicator.Up();
+            return Disposable.Create(loadingIndicator.Down);
         }
     }
 }

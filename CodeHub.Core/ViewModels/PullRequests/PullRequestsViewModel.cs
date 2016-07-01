@@ -1,84 +1,89 @@
 using System;
-using System.Threading.Tasks;
-using System.Windows.Input;
-using MvvmCross.Core.ViewModels;
-using CodeHub.Core.ViewModels;
 using GitHubSharp.Models;
-using MvvmCross.Plugins.Messenger;
 using CodeHub.Core.Messages;
 using System.Linq;
+using ReactiveUI;
+using System.Reactive.Linq;
+using System.Reactive;
+using GitHubSharp;
+using CodeHub.Core.Services;
+using System.Collections.Generic;
 
 namespace CodeHub.Core.ViewModels.PullRequests
 {
-    public class PullRequestsViewModel : LoadableViewModel
+    public class PullRequestsViewModel
+        : BaseViewModel, ILoadableViewModel, IListViewModel<PullRequestItemViewModel>, IPaginatableViewModel
     {
-        private MvxSubscriptionToken _pullRequestEditSubscription;
+        private readonly IReactiveList<PullRequestModel> _pullRequests = new ReactiveList<PullRequestModel>();
 
-        private readonly CollectionViewModel<PullRequestModel> _pullrequests = new CollectionViewModel<PullRequestModel>();
-        public CollectionViewModel<PullRequestModel> PullRequests
+        public IReactiveCommand<Unit> LoadCommand { get; }
+
+        public IReadOnlyReactiveList<PullRequestItemViewModel> Items { get; }
+
+        private readonly ObservableAsPropertyHelper<bool> _isEmpty;
+        public bool IsEmpty => _isEmpty.Value;
+
+        private string _searchText;
+        public string SearchText
         {
-            get { return _pullrequests; }
+            get { return _searchText; }
+            set { this.RaiseAndSetIfChanged(ref _searchText, value); }
         }
 
-        public string Username { get; private set; }
-
-        public string Repository { get; private set; }
+        private IReactiveCommand<Unit> _loadMoreCommand;
+        public IReactiveCommand<Unit> LoadMoreCommand
+        {
+            get { return _loadMoreCommand; }
+            private set { this.RaiseAndSetIfChanged(ref _loadMoreCommand, value); }
+        }
 
         private int _selectedFilter;
         public int SelectedFilter
         {
             get { return _selectedFilter; }
-            set 
+            set { this.RaiseAndSetIfChanged(ref _selectedFilter, value); }
+        }
+
+        public PullRequestsViewModel(string username, string repository) 
+        {
+            var openViewModel = new PullRequestListViewModel(username, repository, NavigateTo, true);
+            var closedViewModel = new PullRequestListViewModel(username, repository, NavigateTo, false);
+
+            Title = "Pull Requests";
+
+            var items = new ReactiveList<PullRequestItemViewModel>();
+
+            this.WhenAnyValue(x => x.SearchText)
+                .Subscribe(x =>
+                {
+                    openViewModel.SearchText = x;
+                    closedViewModel.SearchText = x;
+                });
+
+            this.WhenAnyValue(x => x.SelectedFilter)
+                .Subscribe(x =>
+                {
+                    items.Reset(
+                });
+
+            Items = items;
+
+            LoadCommand = ReactiveCommand.CreateAsyncTask(async _ =>
             {
-                _selectedFilter = value;
-                RaisePropertyChanged(() => SelectedFilter);
-            }
-        }
-
-        public ICommand GoToPullRequestCommand
-        {
-            get { return new MvxCommand<PullRequestModel>(x => ShowViewModel<PullRequestViewModel>(new PullRequestViewModel.NavObject { Username = Username, Repository = Repository, Id = x.Number })); }
-        }
-
-        public PullRequestsViewModel()
-        {
-            this.Bind(x => x.SelectedFilter).Subscribe(_ => LoadCommand.Execute(null));
-        }
-
-        public void Init(NavObject navObject) 
-        {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
-
-            PullRequests.FilteringFunction = x => {
+                _pullRequests.Clear();
                 var state = SelectedFilter == 0 ? "open" : "closed";
-                return x.Where(y => y.State == state);
-            };
-
-            _pullRequestEditSubscription = Messenger.SubscribeOnMainThread<PullRequestEditMessage>(x =>
-            {
-                if (x.PullRequest == null)
-                    return;
-          
-                var index = PullRequests.Items.IndexOf(x.PullRequest);
-                if (index < 0)
-                    return;
-                PullRequests.Items[index] = x.PullRequest;
-                PullRequests.Refresh();
+                var request = application.Client.Users[Username].Repositories[Repository].PullRequests.GetAll(state: state);
+                var response = await application.Client.ExecuteAsync(request);
+                _pullRequests.AddRange(response.Data);
+                SetLoadMore(response.More);
             });
-        }
 
-        protected override Task Load()
-        {
-            var state = SelectedFilter == 0 ? "open" : "closed";
-            var request = this.GetApplication().Client.Users[Username].Repositories[Repository].PullRequests.GetAll(state: state);
-            return PullRequests.SimpleCollectionLoad(request);
-        }
+            LoadCommand.IsExecuting.CombineLatest(_pullRequests.IsEmptyChanged, (x, y) => !x && y)
+                       .ToProperty(this, x => x.IsEmpty, out _isEmpty);
 
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
+            this.WhenAnyValue(x => x.SelectedFilter)
+                .Skip(1)
+                .InvokeCommand(LoadCommand);
         }
     }
 }

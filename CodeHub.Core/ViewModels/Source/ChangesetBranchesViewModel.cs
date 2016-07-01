@@ -1,53 +1,38 @@
+using System;
 using System.Threading.Tasks;
-using System.Windows.Input;
-using CodeHub.Core.ViewModels;
 using GitHubSharp.Models;
 using CodeHub.Core.ViewModels.Changesets;
-using MvvmCross.Core.ViewModels;
+using ReactiveUI;
+using System.Reactive.Linq;
 
 namespace CodeHub.Core.ViewModels.Source
 {
     public class ChangesetBranchesViewModel : LoadableViewModel
     {
-        private readonly CollectionViewModel<BranchModel> _items = new CollectionViewModel<BranchModel>();
+        public string Username { get; }
 
-        public string Username
-        {
-            get;
-            private set;
-        }
+        public string Repository { get; }
 
-        public string Repository
-        {
-            get;
-            private set;
-        }
+        public CollectionViewModel<BranchModel> Branches = new CollectionViewModel<BranchModel>();
 
-        public CollectionViewModel<BranchModel> Branches
-        {
-            get { return _items; }
-        }
+        public IReactiveCommand<object> GoToBranchCommand { get; } = ReactiveCommand.Create();
 
-        public ICommand GoToBranchCommand
+        public ChangesetBranchesViewModel(string username, string repository)
         {
-            get { return new MvxCommand<BranchModel>(x => ShowViewModel<ChangesetsViewModel>(new ChangesetsViewModel.NavObject { Username = Username, Repository = Repository, Branch = x.Name })); }
-        }
+            Username = username;
+            Repository = repository;
 
-        public void Init(NavObject navObject)
-        {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
+            Title = "Changeset Branch";
+
+            GoToBranchCommand
+                .OfType<BranchModel>()
+                .Select(x => new ChangesetsViewModel(Username, Repository, x.Name))
+                .Subscribe(NavigateTo);
         }
 
         protected override Task Load()
         {
             return Branches.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].GetBranches());
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
         }
     }
 }

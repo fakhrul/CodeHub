@@ -1,15 +1,13 @@
 using System.Threading.Tasks;
-using System;
-using CodeHub.Core.ViewModels;
 using CodeHub.Core.Messages;
-using MvvmCross.Plugins.Messenger;
 using System.Linq;
+using System;
 
 namespace CodeHub.Core.ViewModels.Source
 {
     public class SourceViewModel : FileSourceViewModel
     {
-        private readonly MvxSubscriptionToken _editToken;
+        private readonly IDisposable _editToken;
         private static readonly string[] MarkdownExtensions = { ".markdown", ".mdown", ".mkdn", ".md", ".mkd", ".mdwn", ".mdtxt", ".mdtext", ".text" };
 
         private string _name;
@@ -54,30 +52,19 @@ namespace CodeHub.Core.ViewModels.Source
         {
             get { return ContentPath != null && TrueBranch; }
         }
-            
-        public SourceViewModel()
+  
+        public SourceViewModel(string username, string repository, string branch, string path, string htmlUrl, string name, 
+                               string gitUrl, bool forceBinary = false, bool trueBranch = false)
         {
-            _editToken = Messenger.SubscribeOnMainThread<SourceEditMessage>(x =>
-            {
-                if (x.OldSha == null || x.Update == null)
-                    return;
-                _gitUrl = x.Update.Content.GitUrl;
-                if (LoadCommand.CanExecute(null))
-                    LoadCommand.Execute(true);
-            });
-        }
-
-        public void Init(NavObject navObject)
-        {
-            Path = navObject.Path;
-            HtmlUrl = navObject.HtmlUrl;
-            _name = navObject.Name;
-            _gitUrl = navObject.GitUrl;
-            _forceBinary = navObject.ForceBinary;
-            Username = navObject.Username;
-            Repository = navObject.Repository;
-            Branch = navObject.Branch;
-            TrueBranch = navObject.TrueBranch;
+            Path = path;
+            HtmlUrl = htmlUrl;
+            _name = name;
+            _gitUrl = gitUrl;
+            _forceBinary = forceBinary;
+            Username = username;
+            Repository = repository;
+            Branch = branch;
+            TrueBranch = trueBranch;
 
             //Create the filename
             var fileName = System.IO.Path.GetFileName(Path);
@@ -89,19 +76,15 @@ namespace CodeHub.Core.ViewModels.Source
 
             var extension = System.IO.Path.GetExtension(Path);
             IsMarkdown = MarkdownExtensions.Contains(extension);
-        }
 
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
-            public string Branch { get; set; }
-            public string Path { get; set; }
-            public string HtmlUrl { get; set; }
-            public string Name { get; set; }
-            public string GitUrl { get; set; }
-            public bool ForceBinary { get; set; }
-            public bool TrueBranch { get; set; }
+            _editToken = Messenger.Subscribe<SourceEditMessage>(x =>
+            {
+                if (x.OldSha == null || x.Update == null)
+                    return;
+                _gitUrl = x.Update.Content.GitUrl;
+                if (LoadCommand.CanExecute(null))
+                    LoadCommand.Execute(true);
+            });
         }
     }
 }

@@ -2,7 +2,7 @@ using JavaScriptCore;
 using Foundation;
 using CodeHub.Core.Services;
 
-namespace CodeHub.iOS.Services
+namespace CodeHub.Services
 {
     public class MarkdownService : IMarkdownService
     {

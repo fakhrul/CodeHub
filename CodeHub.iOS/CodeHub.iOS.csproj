@@ -6,7 +6,7 @@
     <ProjectGuid>{B061316A-F386-4FE2-93B7-555584234FF8}</ProjectGuid>
     <ProjectTypeGuids>{FEACFBD2-3405-455C-9665-78FE426C6842};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Exe</OutputType>
-    <RootNamespace>CodeHub.iOS</RootNamespace>
+    <RootNamespace>CodeHub</RootNamespace>
     <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
     <AssemblyName>CodeHubiOS</AssemblyName>
     <TargetFrameworkProfile />
@@ -99,60 +99,14 @@
     <Compile Include="Images\Images.cs" />
     <Compile Include="AppDelegate.cs" />
     <Compile Include="Services\MarkdownService.cs" />
-    <Compile Include="Setup.cs" />
     <Compile Include="Theme.cs" />
-    <Compile Include="Views\Events\NewsView.cs" />
-    <Compile Include="Views\Events\OrganizationEventsView.cs" />
-    <Compile Include="Views\Events\UserEventsView.cs" />
-    <Compile Include="Views\Gists\PublicGistsView.cs" />
-    <Compile Include="Views\Gists\StarredGistsView.cs" />
-    <Compile Include="Views\Gists\UserGistsView.cs" />
-    <Compile Include="Views\Gists\EditGistController.cs" />
-    <Compile Include="Views\Gists\GistView.cs" />
-    <Compile Include="Views\Issues\BaseIssuesView.cs" />
-    <Compile Include="Views\Issues\IssueEditView.cs" />
-    <Compile Include="Views\Issues\IssueLabelsView.cs" />
-    <Compile Include="Views\Issues\IssueMilestonesView.cs" />
-    <Compile Include="Views\Issues\IssuesView.cs" />
-    <Compile Include="Views\Issues\IssueView.cs" />
-    <Compile Include="Views\Issues\MyIssuesView.cs" />
     <Compile Include="Views\NotificationsView.cs" />
-    <Compile Include="Views\PullRequests\PullRequestsView.cs" />
-    <Compile Include="Views\PullRequests\PullRequestView.cs" />
-    <Compile Include="Views\Source\ChangesetBranchesView.cs" />
-    <Compile Include="Views\Source\ChangesetView.cs" />
-    <Compile Include="Views\Source\SourceTreeView.cs" />
-    <Compile Include="Views\Repositories\OrganizationRepositoriesView.cs" />
-    <Compile Include="Views\Repositories\ReadmeView.cs" />
-    <Compile Include="Views\Repositories\RepositoriesExploreView.cs" />
-    <Compile Include="Views\Repositories\RepositoriesStarredView.cs" />
-    <Compile Include="Views\Repositories\RepositoryView.cs" />
     <None Include="Info.plist" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Views\Repositories\UserRepositoriesView.cs" />
-    <Compile Include="Views\Source\BranchesAndTagsView.cs" />
-    <Compile Include="Views\Source\ChangesetsView.cs" />
-    <Compile Include="Views\Events\RepositoryEventsView.cs" />
-    <Compile Include="Views\Events\BaseEventsView.cs" />
-    <Compile Include="Views\Source\SourceView.cs" />
-    <Compile Include="Views\Repositories\BaseRepositoriesView.cs" />
-    <Compile Include="Views\Source\FileSourceView.cs" />
-    <Compile Include="Views\Source\ChangesetDiffView.cs" />
-    <Compile Include="Views\PullRequests\PullRequestFilesView.cs" />
-    <Compile Include="Views\Issues\IssueAddView.cs" />
-    <Compile Include="Views\Issues\IssueAssignedToView.cs" />
-    <Compile Include="Views\Source\CommitsView.cs" />
-    <Compile Include="Views\PullRequests\PullRequestCommitsView.cs" />
-    <Compile Include="Views\Filters\IssueMilestonesFilterViewController.cs" />
-    <Compile Include="Views\Filters\IssuesFilterViewController.cs" />
-    <Compile Include="Views\Filters\MyIssuesFilterViewController.cs" />
     <Compile Include="Services\PushNotificationsService.cs" />
-    <Compile Include="Views\Source\EditSourceView.cs" />
     <Compile Include="Services\FeaturesService.cs" />
     <Compile Include="UrlRouterProvider.cs" />
-    <Compile Include="Views\Gists\GistCreateView.cs" />
     <None Include="Entitlements.plist" />
-    <Compile Include="Views\Repositories\RepositoriesTrendingView.cs" />
     <Compile Include="ViewControllers\MarkdownComposerViewController.cs" />
     <None Include="packages.config" />
     <Compile Include="Services\AccountPreferencesService.cs" />
@@ -169,14 +123,12 @@
     <Compile Include="Views\ProgressBarView.cs" />
     <Compile Include="Views\ScrollingToolbarView.cs" />
     <Compile Include="Views\UILabelWithLinks.cs" />
-    <Compile Include="Views\WebView.cs" />
     <Compile Include="XCallback\XCallbackQuery.cs" />
     <Compile Include="TouchViewPresenter.cs" />
     <Compile Include="ViewControllers\DialogViewController.cs" />
     <InterfaceDefinition Include="Launch.storyboard" />
     <Compile Include="Views\ImageAndTitleHeaderView.cs" />
     <Compile Include="Views\SlideupTitleView.cs" />
-    <Compile Include="Views\Repositories\RepositoriesForkedView.cs" />
     <Compile Include="Utilities\Hud.cs" />
     <Compile Include="Utilities\UIImageExtensions.cs" />
     <Compile Include="Utilities\ViewControllerExtensions.cs" />
@@ -256,7 +208,7 @@
     <Compile Include="ViewControllers\BaseViewController.cs" />
     <Compile Include="Utilities\UIKitExtensions.cs" />
     <Compile Include="ViewControllers\ThemedNavigationController.cs" />
-    <Compile Include="ViewControllers\WebBrowserViewController.cs" />
+    <Compile Include="ViewControllers\WebViewController.cs" />
     <Compile Include="ViewControllers\Walkthrough\PromoteViewController.cs" />
     <Compile Include="ViewControllers\Walkthrough\PromoteViewController.designer.cs" />
     <Compile Include="ViewControllers\Application\UpgradeViewController.cs" />
@@ -276,12 +228,9 @@
     <Compile Include="DialogElements\StringElement.cs" />
     <Compile Include="DialogElements\CommitElement.cs" />
     <Compile Include="DialogElements\ChangesetElement.cs" />
-    <Compile Include="DialogElements\GistElement.cs" />
     <Compile Include="DialogElements\MilestoneElement.cs" />
     <Compile Include="DialogElements\LabelElement.cs" />
     <Compile Include="DialogElements\SplitButtonElement.cs" />
-    <Compile Include="DialogElements\PullRequestElement.cs" />
-    <Compile Include="DialogElements\RepositoryElement.cs" />
     <Compile Include="DialogElements\SplitViewElement.cs" />
     <Compile Include="DialogElements\CommentElement.cs" />
     <Compile Include="DialogElements\IssueElement.cs" />
@@ -311,7 +260,6 @@
     <Compile Include="ViewControllers\Walkthrough\OrgViewController.cs" />
     <Compile Include="ViewControllers\Walkthrough\OrgViewController.designer.cs" />
     <InterfaceDefinition Include="ViewControllers\Walkthrough\OrgViewController.xib" />
-    <Compile Include="LinkerPleaseInclude.cs" />
     <Compile Include="WebViews\CommentModel.cs" />
     <None Include="WebViews\CommentsView.cshtml">
       <Generator>RazorTemplatePreprocessor</Generator>
@@ -323,9 +271,7 @@
     <Compile Include="DialogElements\HtmlElement.cs" />
     <Compile Include="Views\BlurredAlertView.cs" />
     <Compile Include="Views\EmptyListView.cs" />
-    <Compile Include="Views\Gists\BaseGistsViewController.cs" />
-    <Compile Include="ViewControllers\Users\BaseUserCollectionViewController.cs" />
-    <Compile Include="ViewControllers\Users\OrganizationMembersViewController.cs" />
+    <Compile Include="ViewControllers\Users\UsersViewController.cs" />
     <Compile Include="ViewControllers\Users\UserFollowersViewController.cs" />
     <Compile Include="ViewControllers\Users\UserFollowingsViewController.cs" />
     <Compile Include="ViewControllers\Organizations\TeamMembersViewController.cs" />
@@ -347,7 +293,73 @@
     <None Include="WebResources\LICENSE" />
     <Compile Include="Services\ErrorService.cs" />
     <Compile Include="ViewControllers\Users\UserViewController.cs" />
-    <Compile Include="Bootstrap\MessengerPluginBootstrap.cs" />
+    <Compile Include="ViewControllers\Repositories\ReadmeViewController.cs" />
+    <Compile Include="ViewControllers\Repositories\RepositoryViewController.cs" />
+    <Compile Include="Services\LoadingIndicatorService.cs" />
+    <Compile Include="ViewControllers\WebBrowserViewController.cs" />
+    <Compile Include="ViewControllers\Repositories\RepositoriesTrendingViewController.cs" />
+    <Compile Include="ViewControllers\Source\BranchesAndTagsViewController.cs" />
+    <Compile Include="ViewControllers\Source\ChangesetBranchesViewController.cs" />
+    <Compile Include="ViewControllers\Source\ChangesetDiffViewController.cs" />
+    <Compile Include="ViewControllers\Source\ChangesetsViewController.cs" />
+    <Compile Include="ViewControllers\Source\ChangesetViewController.cs" />
+    <Compile Include="ViewControllers\Source\CommitsViewController.cs" />
+    <Compile Include="ViewControllers\Source\EditSourceViewController.cs" />
+    <Compile Include="ViewControllers\Source\FileSourceViewController.cs" />
+    <Compile Include="ViewControllers\Source\SourceTreeViewController.cs" />
+    <Compile Include="ViewControllers\Source\SourceViewController.cs" />
+    <Compile Include="ViewControllers\PullRequests\PullRequestCommitsViewController.cs" />
+    <Compile Include="ViewControllers\PullRequests\PullRequestFilesViewController.cs" />
+    <Compile Include="ViewControllers\PullRequests\PullRequestsViewController.cs" />
+    <Compile Include="ViewControllers\PullRequests\PullRequestViewController.cs" />
+    <Compile Include="ViewControllers\Repositories\RepositoriesViewController.cs" />
+    <Compile Include="ViewControllers\Repositories\OrganizationRepositoriesViewController.cs" />
+    <Compile Include="ViewControllers\Repositories\RepositoriesExploreViewController.cs" />
+    <Compile Include="ViewControllers\Repositories\RepositoriesForkedViewController.cs" />
+    <Compile Include="ViewControllers\Repositories\RepositoriesStarredViewController.cs" />
+    <Compile Include="ViewControllers\Repositories\UserRepositoriesViewController.cs" />
+    <Compile Include="ViewControllers\Gists\GistsViewController.cs" />
+    <Compile Include="ViewControllers\Gists\EditGistController.cs" />
+    <Compile Include="ViewControllers\Gists\GistCreateViewController.cs" />
+    <Compile Include="ViewControllers\Gists\GistViewController.cs" />
+    <Compile Include="ViewControllers\Gists\PublicGistsViewController.cs" />
+    <Compile Include="ViewControllers\Gists\StarredGistsViewController.cs" />
+    <Compile Include="ViewControllers\Gists\UserGistsViewController.cs" />
+    <Compile Include="ViewControllers\Events\BaseEventsViewController.cs" />
+    <Compile Include="ViewControllers\Events\NewsViewController.cs" />
+    <Compile Include="ViewControllers\Events\OrganizationEventsViewController.cs" />
+    <Compile Include="ViewControllers\Events\RepositoryEventsViewController.cs" />
+    <Compile Include="ViewControllers\Events\UserEventsViewController.cs" />
+    <Compile Include="ViewControllers\Issues\BaseIssuesViewController.cs" />
+    <Compile Include="ViewControllers\Issues\IssueAddViewController.cs" />
+    <Compile Include="ViewControllers\Issues\IssueAssignedViewController.cs" />
+    <Compile Include="ViewControllers\Issues\IssueEditViewController.cs" />
+    <Compile Include="ViewControllers\Issues\IssueLabelsViewController.cs" />
+    <Compile Include="ViewControllers\Issues\IssueMilestonesViewController.cs" />
+    <Compile Include="ViewControllers\Issues\IssuesViewController.cs" />
+    <Compile Include="ViewControllers\Issues\IssueViewController.cs" />
+    <Compile Include="ViewControllers\Issues\MyIssuesViewController.cs" />
+    <Compile Include="ViewControllers\Filters\IssueMilestonesFilterViewController.cs" />
+    <Compile Include="ViewControllers\Filters\IssuesFilterViewController.cs" />
+    <Compile Include="ViewControllers\Filters\MyIssuesFilterViewController.cs" />
+    <Compile Include="Services\ServiceRegistration.cs" />
+    <Compile Include="ViewControllers\IModalViewController.cs" />
+    <Compile Include="TableViewSources\DialogTableViewSource.cs" />
+    <Compile Include="ViewControllers\BaseTableViewController.cs" />
+    <Compile Include="Views\EnhancedTableView.cs" />
+    <Compile Include="TableViewSources\UserTableViewSource.cs" />
+    <Compile Include="TableViewSources\BaseTableViewSource.cs" />
+    <Compile Include="TableViewCells\UserTableViewCell.cs" />
+    <Compile Include="TableViewCells\BaseTableViewCell.cs" />
+    <Compile Include="TableViewSources\RepositoryTableViewSource.cs" />
+    <Compile Include="DialogElements\RepositoryElement.cs" />
+    <Compile Include="TableViewCells\TeamTableCellView.cs" />
+    <Compile Include="TableViewSources\TeamTableViewSource.cs" />
+    <Compile Include="ViewControllers\Organizations\OrganizationMembersViewController.cs" />
+    <Compile Include="TableViewSources\OrganizationTableViewSource.cs" />
+    <Compile Include="TableViewCells\OrganizationTableViewCell.cs" />
+    <Compile Include="TableViewSources\GistTableViewSource.cs" />
+    <Compile Include="TableViewSources\PullRequestTableViewSource.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -385,38 +397,14 @@
     <Reference Include="Humanizer">
       <HintPath>..\packages\Humanizer.Core.2.0.1\lib\portable-win+net45+wp8+wpa81\Humanizer.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\portable-net40+sl5+wp80+win8+wpa81\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="BTProgressHUD">
       <HintPath>..\packages\BTProgressHUD.1.2.0.3\lib\Xamarin.iOS10\BTProgressHUD.dll</HintPath>
     </Reference>
     <Reference Include="GitHubSharp">
       <HintPath>..\packages\GitHubClient.1.0.15\lib\portable45-net45+win8+wpa81\GitHubSharp.dll</HintPath>
     </Reference>
-    <Reference Include="MvvmCross.Platform.iOS">
-      <HintPath>..\packages\MvvmCross.Platform.4.2.0\lib\Xamarin.iOS10\MvvmCross.Platform.iOS.dll</HintPath>
-    </Reference>
-    <Reference Include="MvvmCross.Platform">
-      <HintPath>..\packages\MvvmCross.Platform.4.2.0\lib\Xamarin.iOS10\MvvmCross.Platform.dll</HintPath>
-    </Reference>
-    <Reference Include="MvvmCross.Plugins.Messenger">
-      <HintPath>..\packages\MvvmCross.Plugin.Messenger.4.2.0\lib\Xamarin.iOS10\MvvmCross.Plugins.Messenger.dll</HintPath>
-    </Reference>
-    <Reference Include="MvvmCross.iOS">
-      <HintPath>..\packages\MvvmCross.Core.4.2.0\lib\Xamarin.iOS10\MvvmCross.iOS.dll</HintPath>
-    </Reference>
-    <Reference Include="MvvmCross.Core">
-      <HintPath>..\packages\MvvmCross.Core.4.2.0\lib\Xamarin.iOS10\MvvmCross.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="MvvmCross.Binding.iOS">
-      <HintPath>..\packages\MvvmCross.Binding.4.2.0\lib\Xamarin.iOS10\MvvmCross.Binding.iOS.dll</HintPath>
-    </Reference>
-    <Reference Include="MvvmCross.Binding">
-      <HintPath>..\packages\MvvmCross.Binding.4.2.0\lib\Xamarin.iOS10\MvvmCross.Binding.dll</HintPath>
-    </Reference>
-    <Reference Include="MvvmCross.Localization">
-      <HintPath>..\packages\MvvmCross.Binding.4.2.0\lib\Xamarin.iOS10\MvvmCross.Localization.dll</HintPath>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\portable-net45+wp80+win8+wpa81\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -559,6 +547,12 @@
     <Folder Include="ViewControllers\Users\" />
     <Folder Include="ViewControllers\Organizations\" />
     <Folder Include="ViewControllers\Gists\" />
+    <Folder Include="ViewControllers\Source\" />
+    <Folder Include="ViewControllers\PullRequests\" />
+    <Folder Include="ViewControllers\Events\" />
+    <Folder Include="ViewControllers\Issues\" />
+    <Folder Include="ViewControllers\Filters\" />
+    <Folder Include="TableViewSources\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
   <ItemGroup>

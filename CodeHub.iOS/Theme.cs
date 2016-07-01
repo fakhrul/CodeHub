@@ -1,7 +1,7 @@
 using UIKit;
-using CodeHub.iOS.Views;
+using CodeHub.Views;
 
-namespace CodeHub.iOS
+namespace CodeHub
 {
     public class Theme
     {
@@ -31,7 +31,7 @@ namespace CodeHub.iOS
             UINavigationBar.Appearance.SetBackgroundImage(backgroundImg, UIBarMetrics.Default);
             UINavigationBar.Appearance.BarTintColor = primaryColor;
             UINavigationBar.Appearance.SetTitleTextAttributes(new UITextAttributes { TextColor = UIColor.White, Font = UIFont.SystemFontOfSize(18f) });
-            CodeHub.iOS.Utilities.Hud.BackgroundTint = UIColor.FromRGBA(228, 228, 228, 128);
+            CodeHub.Utilities.Hud.BackgroundTint = UIColor.FromRGBA(228, 228, 228, 128);
             UINavigationBar.Appearance.BackIndicatorImage = Images.Buttons.BackButton;
             UINavigationBar.Appearance.BackIndicatorTransitionMaskImage = Images.Buttons.BackButton;
 

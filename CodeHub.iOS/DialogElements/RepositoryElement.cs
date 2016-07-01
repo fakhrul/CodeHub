@@ -1,10 +1,11 @@
 using System;
 using Foundation;
 using UIKit;
-using CodeHub.iOS.TableViewCells;
+using CodeHub.TableViewCells;
 using CodeHub.Core.Utilities;
+using CodeHub.Core.ViewModels.Repositories;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class RepositoryElement : Element
     {       
@@ -35,7 +36,7 @@ namespace CodeHub.iOS.DialogElements
         public override UITableViewCell GetCell (UITableView tv)
         {
             var cell = tv.DequeueReusableCell(RepositoryCellView.Key) as RepositoryCellView ?? RepositoryCellView.Create();
-            cell.Bind(_name, _followers.ToString(), _forks.ToString(), _description, ShowOwner ? _owner : null, _avatar);
+            cell.ViewModel = new RepositoryItemViewModel(_name, _description, ShowOwner ? _owner : null, _followers, _forks, _avatar);
             return cell;
         }
         

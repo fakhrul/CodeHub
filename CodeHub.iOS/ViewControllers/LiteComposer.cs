@@ -3,7 +3,7 @@ using CoreGraphics;
 using Foundation;
 using UIKit;
 
-namespace CodeHub.iOS.ViewControllers
+namespace CodeHub.ViewControllers
 {
     public class LiteComposer : BaseViewController
     {
@@ -35,8 +35,8 @@ namespace CodeHub.iOS.ViewControllers
 
             OnActivation(d =>
             {
-                d(close.GetClickedObservable().Subscribe(_ => CloseComposer()));
-                d(_sendButton.GetClickedObservable().Subscribe(_ => PostCallback()));
+                close.GetClickedObservable().Subscribe(_ => CloseComposer()).AddTo(d);
+                _sendButton.GetClickedObservable().Subscribe(_ => PostCallback()).AddTo(d);
             });
         }
 

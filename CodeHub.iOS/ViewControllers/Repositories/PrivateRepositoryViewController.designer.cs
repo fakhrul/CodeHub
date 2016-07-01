@@ -7,7 +7,7 @@
 using Foundation;
 using System.CodeDom.Compiler;
 
-namespace CodeHub.iOS.ViewControllers.Repositories
+namespace CodeHub.ViewControllers.Repositories
 {
     [Register ("PrivateRepositoryViewController")]
     partial class PrivateRepositoryViewController

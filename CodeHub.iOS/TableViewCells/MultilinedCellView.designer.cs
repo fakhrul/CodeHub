@@ -7,7 +7,7 @@
 using Foundation;
 using System.CodeDom.Compiler;
 
-namespace CodeHub.iOS.TableViewCells
+namespace CodeHub.TableViewCells
 {
     [Register ("MultilinedCellView")]
     partial class MultilinedCellView

@@ -1,29 +1,28 @@
 ﻿using System;
 using UIKit;
 using Foundation;
-using CodeHub.iOS.Services;
+using CodeHub.Services;
 using System.Threading.Tasks;
 using System.Linq;
 using CodeHub.Core.Services;
-using CodeHub.iOS.ViewControllers;
 using BigTed;
 using System.Reactive.Disposables;
-using CodeHub.iOS.WebViews;
-using CodeHub.iOS.Views;
-using MvvmCross.Platform;
+using CodeHub.WebViews;
+using Splat;
+using CodeHub.Core.ViewModels.App;
+using WebKit;
 
-namespace CodeHub.iOS.ViewControllers.Application
+namespace CodeHub.ViewControllers.Application
 {
-    public class UpgradeViewController : WebView
+    public class UpgradeViewController : WebViewController<UpgradeViewModel>
     {
-        private readonly IFeaturesService _featuresService = Mvx.Resolve<IFeaturesService>();
-        private readonly IInAppPurchaseService _inAppPurchaseService = Mvx.Resolve<IInAppPurchaseService>();
+        private readonly IFeaturesService _featuresService = Locator.Current.GetService<IFeaturesService>();
+        private readonly IInAppPurchaseService _inAppPurchaseService = Locator.Current.GetService<IInAppPurchaseService>();
         private UIActivityIndicatorView _activityView;
 
-        public UpgradeViewController() : base(false, false)
+        public UpgradeViewController()
         {
-            Title = "Pro Upgrade";
-            ViewModel = new CodeHub.Core.ViewModels.App.UpgradeViewModel();
+            ViewModel = new UpgradeViewModel();
         }
 
         public override void ViewDidLoad()
@@ -74,7 +73,7 @@ namespace CodeHub.iOS.ViewControllers.Application
             }
         }
 
-        protected override bool ShouldStartLoad(WebKit.WKWebView webView, WebKit.WKNavigationAction navigationAction)
+        public override bool ShouldStartLoad(WKWebView webView, WKNavigationAction navigationAction)
         {
             var url = navigationAction.Request.Url;
 
@@ -141,8 +140,8 @@ namespace CodeHub.iOS.ViewControllers.Application
             var nav = new ThemedNavigationController(vc);
 
             var navObj = new UIBarButtonItem(Images.Buttons.CancelButton, UIBarButtonItemStyle.Done, (_, __) => @this.DismissViewController(true, null));
-            vc.ViewWillAppearCalled += (sender, e) => vc.NavigationItem.LeftBarButtonItem = navObj;
-            vc.ViewDidDisappearCalled += (sender, e) => vc.NavigationItem.LeftBarButtonItem = null;
+            vc.Appearing.Subscribe(_ => vc.NavigationItem.LeftBarButtonItem = navObj);
+            vc.Disappeared.Subscribe(_ => vc.NavigationItem.LeftBarButtonItem = null);
             @this.PresentViewController(nav, true, null);
             return vc;
         }

@@ -1,6 +1,6 @@
 ﻿using System;
 using CodeHub.Core.Utilities;
-using CodeHub.iOS;
+using CodeHub;
 using SDWebImage;
 using Foundation;
 

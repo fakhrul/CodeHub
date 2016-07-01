@@ -1,10 +1,11 @@
-using MvvmCross.Platform;
 using SQLite;
 
 namespace CodeHub.Core.Data
 {
     public class Filter
     {
+        private static readonly GitHubSharp.SimpleJsonSerializer _serializer = new GitHubSharp.SimpleJsonSerializer();
+
         [PrimaryKey]
         [AutoIncrement]
         public int Id { get; set; }
@@ -23,8 +24,7 @@ namespace CodeHub.Core.Data
         {
             try
             {
-                var serializer = Mvx.Resolve<CodeHub.Core.Services.IJsonSerializationService>();
-                return serializer.Deserialize<T>(RawData);
+                return _serializer.Deserialize<T>(RawData);
             }
             catch
             {
@@ -38,8 +38,7 @@ namespace CodeHub.Core.Data
         /// <param name="o">O.</param>
         public void SetData(object o)
         {
-            var serializer = Mvx.Resolve<CodeHub.Core.Services.IJsonSerializationService>();
-            RawData = serializer.Serialize(o);
+            RawData = _serializer.Serialize(o);
         }
     }
 }

@@ -1,13 +1,12 @@
 using System;
-using CodeHub.Core.ViewModels;
 using GitHubSharp.Models;
 using CodeHub.Core.Filters;
-using System.Windows.Input;
-using MvvmCross.Core.ViewModels;
 using CodeHub.Core.ViewModels.PullRequests;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using CodeHub.Core.Utils;
+using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels.Issues
 {
@@ -20,14 +19,17 @@ namespace CodeHub.Core.ViewModels.Issues
             get { return _issues; }
         }
 
-        public ICommand GoToIssueCommand
+        public IReactiveCommand<object> GoToIssueCommand { get; } = ReactiveCommand.Create();
+
+        protected BaseIssuesViewModel()
         {
-            get 
-            { 
-                return new MvxCommand<IssueModel>(x => {
+            GoToIssueCommand
+                .OfType<IssueModel>()
+                .Subscribe(x =>
+                {
                     var isPullRequest = x.PullRequest != null && !(string.IsNullOrEmpty(x.PullRequest.HtmlUrl));
-                    var s1 = x.Url.Substring(x.Url.IndexOf("/repos/") + 7);
-                    var issuesIndex = s1.LastIndexOf("/issues");
+                    var s1 = x.Url.Substring(x.Url.IndexOf("/repos/", StringComparison.Ordinal) + 7);
+                    var issuesIndex = s1.LastIndexOf("/issues", StringComparison.Ordinal);
                     issuesIndex = issuesIndex < 0 ? 0 : issuesIndex;
                     var repoId = RepositoryIdentifier.FromFullName(s1.Substring(0, issuesIndex));
 
@@ -35,11 +37,10 @@ namespace CodeHub.Core.ViewModels.Issues
                         return;
 
                     if (isPullRequest)
-                        ShowViewModel<PullRequestViewModel>(new PullRequestViewModel.NavObject { Username = repoId.Owner, Repository = repoId.Name, Id = x.Number });
+                        NavigateTo(new PullRequestViewModel(repoId.Owner, repoId.Name, x.Number));
                     else
-                        ShowViewModel<IssueViewModel>(new IssueViewModel.NavObject { Username = repoId.Owner, Repository = repoId.Name, Id = x.Number });
+                        NavigateTo(new IssueViewModel(repoId.Owner, repoId.Name, x.Number));
                 });
-            }
         }
 
         protected virtual List<IGrouping<string, IssueModel>> Group(IEnumerable<IssueModel> model)
@@ -68,9 +69,9 @@ namespace CodeHub.Core.ViewModels.Issues
         }
     }
 
-    public interface IBaseIssuesViewModel : IMvxViewModel
+    public interface IBaseIssuesViewModel
     {
-        ICommand GoToIssueCommand { get; }
+        IReactiveCommand<object> GoToIssueCommand { get; }
     }
 }
 

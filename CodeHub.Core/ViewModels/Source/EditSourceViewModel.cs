@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using CodeHub.Core.Messages;
-using MvvmCross.Core.ViewModels;
+using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels.Source
 {
@@ -24,12 +24,12 @@ namespace CodeHub.Core.ViewModels.Source
 
         public string Branch { get; private set; }
 
-        public void Init(NavObject navObject)
+        public EditSourceViewModel(string username, string repository, string branch = null, string path = null)
         {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
-            Path = navObject.Path ?? string.Empty;
-            Branch = navObject.Branch ?? "master";
+            Username = username;
+            Repository = repository;
+            Branch = branch ?? "master";
+            Path = path ?? string.Empty;
 
             if (!Path.StartsWith("/", StringComparison.Ordinal))
                 Path = "/" + Path;
@@ -47,15 +47,7 @@ namespace CodeHub.Core.ViewModels.Source
         {
             var request = this.GetApplication().Client.Users[Username].Repositories[Repository].UpdateContentFile(Path, message, data, BlobSha, Branch);
             var response = await this.GetApplication().Client.ExecuteAsync(request);
-            Messenger.Publish(new SourceEditMessage(this) { OldSha = BlobSha, Data = data, Update = response.Data });
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
-            public string Path { get; set; }
-            public string Branch { get; set; }
+            Messenger.Publish(new SourceEditMessage { OldSha = BlobSha, Data = data, Update = response.Data });
         }
     }
 }

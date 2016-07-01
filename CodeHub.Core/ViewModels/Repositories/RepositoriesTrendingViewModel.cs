@@ -1,11 +1,10 @@
 using System;
-using CodeHub.Core.ViewModels;
-using System.Windows.Input;
 using System.Threading.Tasks;
-using MvvmCross.Core.ViewModels;
 using System.Collections.Generic;
 using CodeHub.Core.Data;
 using GitHubSharp.Models;
+using ReactiveUI;
+using System.Reactive.Linq;
 
 namespace CodeHub.Core.ViewModels.Repositories
 {
@@ -35,18 +34,10 @@ namespace CodeHub.Core.ViewModels.Repositories
         public RepositoriesTrendingViewModel()
         {
             SelectedLanguage = _defaultLanguage;
+            this.WhenAnyValue(x => x.SelectedLanguage)
+                .Skip(1).InvokeCommand(LoadCommand);
         }
 
-        public void Init()
-        {
-            this.Bind(x => x.SelectedLanguage).Subscribe(_ => LoadCommand.Execute(null));
-        }
-
-        public ICommand GoToRepositoryCommand
-        {
-            get { return new MvxCommand<RepositoryModel>(x => ShowViewModel<RepositoryViewModel>(new RepositoryViewModel.NavObject { Username = x.Owner?.Login, Repository = x.Name })); }
-        }
- 
         protected override async Task Load()
         {
             var trendingRepo = new TrendingRepository();

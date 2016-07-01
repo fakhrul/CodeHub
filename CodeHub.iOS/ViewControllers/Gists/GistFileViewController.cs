@@ -1,22 +1,23 @@
 using UIKit;
 using System;
-using CodeHub.iOS.WebViews;
+using CodeHub.WebViews;
 using System.Threading.Tasks;
-using MvvmCross.Platform;
 using CodeHub.Core.Services;
 using CodeHub.Core.ViewModels.Gists;
 using System.Reactive.Linq;
+using Splat;
+using CodeHub.ViewControllers.Source;
+using ReactiveUI;
 
-namespace CodeHub.iOS.ViewControllers.Gists
+namespace CodeHub.ViewControllers.Gists
 {
-    public class GistFileViewController : CodeHub.iOS.Views.Source.FileSourceView
+    public class GistFileViewController : FileSourceViewController<GistFileViewModel>
     {
         public override void ViewDidLoad()
         {
             base.ViewDidLoad();
 
-            var vm = ViewModel as GistFileViewModel;
-            vm.Bind(x => x.ContentPath)
+            this.WhenAnyValue(x => x.ViewModel.ContentPath)
               .IsNotNull()
               .Subscribe(x => LoadSource(new Uri("file://" + x)).ToBackground());
         }
@@ -28,7 +29,7 @@ namespace CodeHub.iOS.ViewControllers.Gists
 
             if (ViewModel.IsMarkdown)
             {
-                var markdownContent = await Mvx.Resolve<IApplicationService>().Client.Markdown.GetMarkdown(content);
+                var markdownContent = await Locator.Current.GetService<IApplicationService>().Client.Markdown.GetMarkdown(content);
                 var model = new DescriptionModel(markdownContent, fontSize);
                 var htmlContent = new MarkdownView { Model = model };
                 LoadContent(htmlContent.GenerateString());

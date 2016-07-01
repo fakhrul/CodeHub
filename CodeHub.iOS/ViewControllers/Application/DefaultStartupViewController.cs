@@ -1,17 +1,17 @@
-using CodeHub.iOS.ViewControllers;
 using CodeHub.Core.ViewModels.App;
 using System;
 using UIKit;
 using System.Linq;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
+using ReactiveUI;
 
-namespace CodeHub.iOS.ViewControllers.Application
+namespace CodeHub.ViewControllers.Application
 {
-    public class DefaultStartupViewController : ViewModelCollectionDrivenDialogViewController
+    public class DefaultStartupViewController : ViewModelCollectionDrivenDialogViewController<DefaultStartupViewModel>
     {
         public DefaultStartupViewController()
         {
-            Title = "Default Startup View";
+            ViewModel = new DefaultStartupViewModel();
             EnableSearch = false;
         }
 
@@ -19,16 +19,15 @@ namespace CodeHub.iOS.ViewControllers.Application
         {
             base.ViewDidLoad();
 
-            var vm = (BaseDefaultStartupViewModel)ViewModel;
-            BindCollection(vm.StartupViews, x => {
+            BindCollection(ViewModel.StartupViews, x => {
                 var e = new StringElement(x);
-                e.Clicked.Subscribe(_ => vm.SelectedStartupView = x);
-                if (string.Equals(vm.SelectedStartupView, x))
+                e.Clicked.Subscribe(_ => ViewModel.SelectedStartupView = x);
+                if (string.Equals(ViewModel.SelectedStartupView, x))
                     e.Accessory = UITableViewCellAccessory.Checkmark;
                 return e;
             }, true);
 
-            vm.Bind(x => x.SelectedStartupView, true).Subscribe(x =>
+            this.WhenAnyValue(x => x.ViewModel.SelectedStartupView).Subscribe(x =>
             {
                 if (Root.Count == 0)
                     return;

@@ -1,5 +1,6 @@
 using CodeHub.Core.Services;
-using MvvmCross.Platform;
+using ReactiveUI;
+using Splat;
 
 namespace CodeHub.Core.ViewModels
 {
@@ -11,17 +12,13 @@ namespace CodeHub.Core.ViewModels
         public TF Filter
         {
             get { return _filter; }
-            set
-            {
-                _filter = value;
-                RaisePropertyChanged(() => Filter);
-            }
+            set { this.RaiseAndSetIfChanged(ref _filter, value); }
         }
 
         public FilterableCollectionViewModel(string filterKey)
         {
             _filterKey = filterKey;
-            var accounts = Mvx.Resolve<IAccountsService>();
+            var accounts = Locator.Current.GetService<IAccountsService>();
             _filter = accounts.ActiveAccount.Filters.GetFilter<TF>(_filterKey);
         }
 
@@ -30,7 +27,7 @@ namespace CodeHub.Core.ViewModels
             Filter = filter;
             if (saveAsDefault)
             {
-                var accounts = Mvx.Resolve<IAccountsService>();
+                var accounts = Locator.Current.GetService<IAccountsService>();
                 accounts.ActiveAccount.Filters.AddFilter(_filterKey, filter);
             }
         }

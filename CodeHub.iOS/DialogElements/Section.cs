@@ -3,12 +3,14 @@ using UIKit;
 using CoreGraphics;
 using Foundation;
 using System.Collections.ObjectModel;
+using System.Linq;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
-    public class Section : IEnumerable<Element> {
+    public class Section : IEnumerable<Element>
+    {
         object header, footer;
-        private readonly List<Element> _elements = new List<Element> ();
+        private readonly List<Element> _elements = new List<Element>();
 
         public RootElement Root
         {
@@ -43,11 +45,14 @@ namespace CodeHub.iOS.DialogElements
         /// <summary>
         ///    The section header, as a string
         /// </summary>
-        public string Header {
-            get {
+        public string Header
+        {
+            get
+            {
                 return header as string;
             }
-            set {
+            set
+            {
                 header = value;
             }
         }
@@ -55,12 +60,15 @@ namespace CodeHub.iOS.DialogElements
         /// <summary>
         /// The section footer, as a string.
         /// </summary>
-        public string Footer {
-            get {
+        public string Footer
+        {
+            get
+            {
                 return footer as string;
             }
 
-            set {
+            set
+            {
                 footer = value;
             }
         }
@@ -68,11 +76,14 @@ namespace CodeHub.iOS.DialogElements
         /// <summary>
         /// The section's header view.  
         /// </summary>
-        public UIView HeaderView {
-            get {
+        public UIView HeaderView
+        {
+            get
+            {
                 return header as UIView;
             }
-            set {
+            set
+            {
                 header = value;
             }
         }
@@ -80,11 +91,14 @@ namespace CodeHub.iOS.DialogElements
         /// <summary>
         /// The section's footer view.
         /// </summary>
-        public UIView FooterView {
-            get {
+        public UIView FooterView
+        {
+            get
+            {
                 return footer as UIView;
             }
-            set {
+            set
+            {
                 footer = value;
             }
         }
@@ -95,16 +109,19 @@ namespace CodeHub.iOS.DialogElements
         /// <param name="element">
         /// An element to add to the section.
         /// </param>
-        public void Add (Element element)
+        public void Add(Element element)
         {
             if (element == null)
                 return;
 
-            _elements.Add (element);
+            if (_elements.Contains(element))
+                return;
+
+            _elements.Add(element);
             element.SetSection(this);
 
             if (Root != null)
-                InsertVisual (_elements.Count-1, UITableViewRowAnimation.None, 1);
+                InsertVisual(_elements.Count - 1, UITableViewRowAnimation.None, 1);
         }
 
         public void Add(IEnumerable<Element> elements)
@@ -122,8 +139,9 @@ namespace CodeHub.iOS.DialogElements
         public int AddAll(IEnumerable<Element> elements)
         {
             int count = 0;
-            foreach (var e in elements){
-                Add (e);
+            foreach (var e in elements)
+            {
+                Add(e);
                 count++;
             }
             return count;
@@ -141,69 +159,47 @@ namespace CodeHub.iOS.DialogElements
         /// <param name="newElements">
         /// A series of elements.
         /// </param>
-        public void Insert (int idx, UITableViewRowAnimation anim, params Element [] newElements)
+        public void Insert(int idx, UITableViewRowAnimation anim, params Element[] newElements)
         {
             if (newElements == null)
                 return;
 
+            var elements = newElements.Except(_elements);
+
             int pos = idx;
-            foreach (var e in newElements)
+            int inserts = 0;
+            foreach (var e in elements)
             {
-                _elements.Insert (pos++, e);
+                inserts++;
+                _elements.Insert(pos++, e);
                 e.SetSection(this);
             }
+
+            if (inserts == 0)
+                return;
 
             if (Root != null && Root.TableView != null)
             {
                 if (anim == UITableViewRowAnimation.None)
-                    Root.TableView.ReloadData ();
+                    Root.TableView.ReloadData();
                 else
-                    InsertVisual (idx, anim, newElements.Length);
+                    InsertVisual(idx, anim, inserts);
             }
         }
 
-        public int Insert (int idx, UITableViewRowAnimation anim, IEnumerable<Element> newElements)
-        {
-            if (newElements == null)
-                return 0;
-
-            int pos = idx;
-            int count = 0;
-            foreach (var e in newElements)
-            {
-                _elements.Insert (pos++, e);
-                e.SetSection(this);
-                count++;
-            }
-
-            if (Root != null && Root.TableView != null)
-            {                
-                if (anim == UITableViewRowAnimation.None)
-                    Root.TableView.ReloadData ();
-                else
-                    InsertVisual (idx, anim, pos-idx);
-            }
-            return count;
-        }
-
-        void InsertVisual (int idx, UITableViewRowAnimation anim, int count)
+        void InsertVisual(int idx, UITableViewRowAnimation anim, int count)
         {
             if (Root == null || Root.TableView == null)
                 return;
 
-            int sidx = Root.IndexOf (this);
-            var paths = new NSIndexPath [count];
+            int sidx = Root.IndexOf(this);
+            var paths = new NSIndexPath[count];
             for (int i = 0; i < count; i++)
-                paths [i] = NSIndexPath.FromRowSection (idx+i, sidx);
-            Root.TableView.InsertRows (paths, anim);
+                paths[i] = NSIndexPath.FromRowSection(idx + i, sidx);
+            Root.TableView.InsertRows(paths, anim);
         }
 
-        public void Insert (int index, params Element [] newElements)
-        {
-            Insert (index, UITableViewRowAnimation.None, newElements);
-        }
-
-        public void Remove (Element e, UITableViewRowAnimation animation = UITableViewRowAnimation.Automatic)
+        public void Remove(Element e, UITableViewRowAnimation animation = UITableViewRowAnimation.Automatic)
         {
             if (e == null)
                 return;
@@ -211,57 +207,38 @@ namespace CodeHub.iOS.DialogElements
             for (int i = _elements.Count; i > 0;)
             {
                 i--;
-                if (_elements [i] == e)
+                if (_elements[i] == e)
                 {
-                    RemoveRange (i, 1, animation);
+                    RemoveRange(i, 1, animation);
                     e.SetSection(null);
                     return;
                 }
             }
         }
 
-        public void Remove (int idx)
-        {
-            RemoveRange (idx, 1);
-        }
-
-        /// <summary>
-        /// Remove a range of elements from the section with the given animation
-        /// </summary>
-        /// <param name="start">
-        /// Starting position
-        /// </param>
-        /// <param name="count">
-        /// Number of elements to remove form the section
-        /// </param>
-        /// <param name="anim">
-        /// The animation to use while removing the elements
-        /// </param>
-        public void RemoveRange (int start, int count, UITableViewRowAnimation anim = UITableViewRowAnimation.Fade)
+        public void RemoveRange(int start, int count, UITableViewRowAnimation anim = UITableViewRowAnimation.Fade)
         {
             if (start < 0 || start >= _elements.Count)
                 return;
             if (count == 0)
                 return;
 
-            if (start+count > _elements.Count)
-                count = _elements.Count-start;
+            if (start + count > _elements.Count)
+                count = _elements.Count - start;
 
-            _elements.RemoveRange (start, count);
+            _elements.RemoveRange(start, count);
 
             if (Root != null && Root.TableView != null)
             {
                 int sidx = Root.IndexOf(this);
-                var paths = new NSIndexPath [count];
+                var paths = new NSIndexPath[count];
                 for (int i = 0; i < count; i++)
                     paths[i] = NSIndexPath.FromRowSection(start + i, sidx);
                 Root.TableView.DeleteRows(paths, anim);
-
-                //Root.TableView.ReloadData();
             }
         }
 
-        public int Count 
+        public int Count
         {
             get { return _elements.Count; }
         }
@@ -276,29 +253,32 @@ namespace CodeHub.iOS.DialogElements
             return GetEnumerator();
         }
 
-        public Element this [int idx] 
+        public Element this[int idx]
         {
             get { return _elements[idx]; }
         }
 
-        public void Clear ()
+        public void Clear()
         {
             foreach (var e in _elements)
                 e.SetSection(null);
+
             _elements.Clear();
-            if (Root != null && Root.TableView != null)
-                Root.TableView.ReloadData ();
+            Root?.ReloadData();
         }
 
-        public void Reset(IEnumerable<Element> elements, UITableViewRowAnimation animation = UITableViewRowAnimation.Fade)
+        public void Reset(IEnumerable<Element> elements)
         {
+            foreach (var e in _elements)
+                e.SetSection(null);
+
             _elements.Clear();
             _elements.AddRange(elements);
+
             foreach (var e in _elements)
                 e.SetSection(this);
-            if (Root != null && Root.TableView != null)
-                Root.TableView.ReloadData();
+
+            Root?.ReloadData();
         }
     }
 }
-

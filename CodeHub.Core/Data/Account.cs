@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using CodeHub.Core.Services;
-using MvvmCross.Platform;
+using Splat;
 using SQLite;
 
 namespace CodeHub.Core.Data
@@ -59,7 +59,7 @@ namespace CodeHub.Core.Data
         {
             get
             {
-                var accountsDir = Mvx.Resolve<IAccountPreferencesService>().AccountsDir;
+                var accountsDir = Locator.Current.GetService<IAccountPreferencesService>().AccountsDir;
                 return Path.Combine(accountsDir, Id.ToString(CultureInfo.InvariantCulture));
             }
         }

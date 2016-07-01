@@ -1,7 +1,7 @@
 using CodeHub.Core.Services;
 using Foundation;
 
-namespace CodeHub.iOS.Services
+namespace CodeHub.Services
 {
     public class DefaultValueService : IDefaultValueService
     {

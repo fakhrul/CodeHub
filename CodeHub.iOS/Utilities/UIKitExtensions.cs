@@ -2,6 +2,7 @@
 using System.Reactive.Linq;
 using System.Reactive;
 using Foundation;
+using CoreGraphics;
 
 // Analysis disable once CheckNamespace
 namespace UIKit
@@ -43,6 +44,11 @@ namespace UIKit
             return Observable.FromEventPattern<UISearchBarTextChangedEventArgs>(t => @this.TextChanged += t, t => @this.TextChanged -= t).Select(_ => @this.Text);
         }
 
+        public static IObservable<Unit> GetCanceledObservable(this UISearchBar @this)
+        {
+            return Observable.FromEventPattern(t => @this.CancelButtonClicked += t, t => @this.CancelButtonClicked -= t).Select(_ => Unit.Default);
+        }
+
         public static IObservable<Unit> GetSearchObservable(this UISearchBar @this)
         {
             return Observable.FromEventPattern(t => @this.SearchButtonClicked += t, t => @this.SearchButtonClicked -= t).Select(_ => Unit.Default);
@@ -69,6 +75,45 @@ namespace UIKit
                 return shortVersion;
 
             return string.IsNullOrEmpty(bundleVersion) ? shortVersion : string.Format("{0} ({1})", shortVersion, bundleVersion);
+        }
+
+        public static UISearchBar CreateSearchBar(this UITableView tableView)
+        {
+            var searchBar = new UISearchBar(new CGRect(0, 0, tableView.Bounds.Width, 44));
+            searchBar.OnEditingStarted += (sender, e) => searchBar.ShowsCancelButton = true;
+            searchBar.OnEditingStopped += (sender, e) => searchBar.ShowsCancelButton = false;
+            searchBar.CancelButtonClicked += (sender, e) =>
+            {
+                searchBar.ShowsCancelButton = false;
+                searchBar.ResignFirstResponder();
+            };
+            tableView.TableHeaderView = searchBar;
+            return searchBar;
+        }
+
+        public static void DisposeAll(this UIView view)
+        {
+            if (view.IsDisposedOrNull())
+                return;
+
+            try
+            {
+                foreach (var subView in view.Subviews)
+                    subView.DisposeAll();
+
+                view.RemoveFromSuperview();
+                view.Dispose();
+            }
+            catch
+            {
+            }
+        }
+
+        public static bool IsDisposedOrNull(this UIView view)
+        {
+            if (view == null) return true;
+            if (view.Handle == IntPtr.Zero) return true;
+            return false;
         }
     }
 

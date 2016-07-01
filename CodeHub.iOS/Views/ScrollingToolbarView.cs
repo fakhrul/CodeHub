@@ -3,7 +3,7 @@ using CoreGraphics;
 using System.Collections.Generic;
 using System;
 
-namespace CodeHub.iOS.Views
+namespace CodeHub.Views
 {
     public class ScrollingToolbarView : UIView
     {

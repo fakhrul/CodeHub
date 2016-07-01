@@ -2,12 +2,10 @@ using System;
 using System.Threading.Tasks;
 using CodeHub.Core.Data;
 using CodeHub.Core.Services;
-using CodeHub.Core.ViewModels;
-using CodeHub.Core.Factories;
-using MvvmCross.Core.ViewModels;
 using CodeHub.Core.Messages;
-using GitHubSharp;
 using System.Reactive;
+using ReactiveUI;
+using Splat;
 
 namespace CodeHub.Core.ViewModels.Accounts
 {
@@ -15,7 +13,7 @@ namespace CodeHub.Core.ViewModels.Accounts
     {
         private GitHubAccount _attemptedAccount;
         private readonly IApplicationService _application;
-        private readonly ILoginFactory _loginFactory;
+        private readonly ILoginService _loginFactory;
 
         private bool _isLoggingIn;
         public bool IsLoggingIn
@@ -47,19 +45,16 @@ namespace CodeHub.Core.ViewModels.Accounts
 
         public string TwoFactor { get; set; }
 
-        public ReactiveUI.IReactiveCommand<Unit> LoginCommand { get; }
+        public IReactiveCommand<Unit> LoginCommand { get; }
 
-        public AddAccountViewModel(IApplicationService application, ILoginFactory loginFactory)
+        public AddAccountViewModel(int attemptedAccountId = int.MinValue)
         {
-            _application = application;
-            _loginFactory = loginFactory;
-            LoginCommand = ReactiveUI.ReactiveCommand.CreateAsyncTask(_ => Login());
-        }
+            _application = Locator.Current.GetService<IApplicationService>();
+            _loginFactory = Locator.Current.GetService<ILoginService>();
+            LoginCommand = ReactiveCommand.CreateAsyncTask(_ => Login());
 
-        public void Init(NavObject navObject)
-        {
-            if (navObject.AttemptedAccountId >= 0)
-                _attemptedAccount = this.GetApplication().Accounts.Find(navObject.AttemptedAccountId);
+            if (attemptedAccountId >= 0)
+                _attemptedAccount = this.GetApplication().Accounts.Find(attemptedAccountId);
 
             if (_attemptedAccount != null)
             {
@@ -90,7 +85,7 @@ namespace CodeHub.Core.ViewModels.Accounts
                 var account = await _loginFactory.LoginWithBasic(apiUrl, Username, Password, TwoFactor);
                 var client = await _loginFactory.LoginAccount(account);
                 _application.ActivateUser(account, client);
-                ReactiveUI.MessageBus.Current.SendMessage(new LogoutMessage());
+                MessageBus.Current.SendMessage(new LogoutMessage());
             }
             catch (Exception)
             {
@@ -100,16 +95,6 @@ namespace CodeHub.Core.ViewModels.Accounts
             finally
             {
                 IsLoggingIn = false;
-            }
-        }
-
-        public class NavObject
-        {
-            public int AttemptedAccountId { get; set; }
-
-            public NavObject()
-            {
-                AttemptedAccountId = int.MinValue;
             }
         }
     }

@@ -1,17 +1,27 @@
 using System.Threading.Tasks;
+using CodeHub.Core.Services;
+using GitHubSharp.Models;
+using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels.Repositories
 {
     public class RepositoriesStarredViewModel : RepositoriesViewModel
     {
+        private readonly IApplicationService _applicationService;
+
         public RepositoriesStarredViewModel()
         {
-            ShowRepositoryOwner = true;
+            _applicationService = GetService<IApplicationService>();
+
+            Title = "Starred";
         }
 
-        protected override Task Load()
+        protected override async Task<bool> Load(IReactiveList<RepositoryModel> repositories, int page)
         {
-            return Repositories.SimpleCollectionLoad(this.GetApplication().Client.AuthenticatedUser.Repositories.GetStarred());
+            var request = _applicationService.Client.AuthenticatedUser.Repositories.GetStarred(page);
+            var items = await _applicationService.Client.ExecuteAsync(request);
+            repositories.AddRange(items.Data);
+            return items.More != null;
         }
     }
 }

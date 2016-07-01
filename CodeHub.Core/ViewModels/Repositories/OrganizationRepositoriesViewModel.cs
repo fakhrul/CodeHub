@@ -1,33 +1,31 @@
 using System.Threading.Tasks;
+using CodeHub.Core.Services;
+using GitHubSharp.Models;
+using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels.Repositories
 {
     public class OrganizationRepositoriesViewModel : RepositoriesViewModel
     {
-        public string Name
-        {
-            get;
-            private set;
-        }
+        private readonly IApplicationService _applicationService;
 
-        public OrganizationRepositoriesViewModel()
+        public string OrganizationName { get; }
+
+        public OrganizationRepositoriesViewModel(string organizationName)
         {
+            _applicationService = GetService<IApplicationService>();
+
+            Title = organizationName;
+            OrganizationName = organizationName;
             ShowRepositoryOwner = false;
         }
 
-        public void Init(NavObject navObject)
+        protected override async Task<bool> Load(IReactiveList<RepositoryModel> repositories, int page)
         {
-            Name = navObject.Name;
-        }
-
-        protected override Task Load()
-        {
-            return Repositories.SimpleCollectionLoad(this.GetApplication().Client.Organizations[Name].Repositories.GetAll());
-        }
-
-        public class NavObject
-        {
-            public string Name { get; set; }
+            var request = _applicationService.Client.Organizations[OrganizationName].Repositories.GetAll(page);
+            var items = await _applicationService.Client.ExecuteAsync(request);
+            repositories.AddRange(items.Data);
+            return items.More != null;
         }
     }
 }

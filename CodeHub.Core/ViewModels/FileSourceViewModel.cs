@@ -1,7 +1,7 @@
+using System;
 using System.Linq;
-using System.Windows.Input;
-using CodeHub.Core.ViewModels;
-using MvvmCross.Core.ViewModels;
+using System.Reactive.Linq;
+using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels
 {
@@ -28,15 +28,19 @@ namespace CodeHub.Core.ViewModels
             protected set { this.RaiseAndSetIfChanged(ref _contentPath, value); }
         }
 
+        private string _htmlUrl;
         public string HtmlUrl
         {
-            get;
-            protected set;
+            get { return _htmlUrl; }
+            protected set { this.RaiseAndSetIfChanged(ref _htmlUrl, value); }
         }
 
-        public ICommand GoToHtmlUrlCommand
+        public IReactiveCommand<object> GoToHtmlUrlCommand { get; }
+
+        protected FileSourceViewModel()
         {
-            get { return new MvxCommand(() => ShowViewModel<WebBrowserViewModel>(new WebBrowserViewModel.NavObject { Url = HtmlUrl }), () => !string.IsNullOrEmpty(HtmlUrl)); }
+            GoToHtmlUrlCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.HtmlUrl).Select(x => !string.IsNullOrEmpty(x)));
+            GoToHtmlUrlCommand.Subscribe(_ => NavigateTo(new WebBrowserViewModel(HtmlUrl)));
         }
 
         protected static string CreatePlainContentFile(string data, string filename)

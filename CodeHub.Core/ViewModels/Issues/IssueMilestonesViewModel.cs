@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
-using CodeHub.Core.ViewModels;
 using GitHubSharp.Models;
 using CodeHub.Core.Messages;
-using System.Linq;
 using System;
+using ReactiveUI;
+using System.Reactive.Linq;
 
 namespace CodeHub.Core.ViewModels.Issues
 {
@@ -12,32 +12,18 @@ namespace CodeHub.Core.ViewModels.Issues
         private MilestoneModel _selectedMilestone;
         public MilestoneModel SelectedMilestone
         {
-            get
-            {
-                return _selectedMilestone;
-            }
-            set
-            {
-                _selectedMilestone = value;
-                RaisePropertyChanged(() => SelectedMilestone);
-            }
+            get { return _selectedMilestone; }
+            set { this.RaiseAndSetIfChanged(ref _selectedMilestone, value); }
         }
 
         private bool _isSaving;
         public bool IsSaving
         {
             get { return _isSaving; }
-            private set {
-                _isSaving = value;
-                RaisePropertyChanged(() => IsSaving);
-            }
+            private set { this.RaiseAndSetIfChanged(ref _isSaving, value); }
         }
 
-        private readonly CollectionViewModel<MilestoneModel> _milestones = new CollectionViewModel<MilestoneModel>();
-        public CollectionViewModel<MilestoneModel> Milestones
-        {
-            get { return _milestones; }
-        }
+        public CollectionViewModel<MilestoneModel> Milestones { get; } = new CollectionViewModel<MilestoneModel>();
 
         public string Username  { get; private set; }
 
@@ -47,15 +33,19 @@ namespace CodeHub.Core.ViewModels.Issues
 
         public bool SaveOnSelect { get; private set; }
 
-        public void Init(NavObject navObject)
+        public IssueMilestonesViewModel(string username, string repository, long id, bool saveOnSelect, MilestoneModel selectedMilestone = null)
         {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
-            Id = navObject.Id;
-            SaveOnSelect = navObject.SaveOnSelect;
-            SelectedMilestone = TxSevice.Get() as MilestoneModel;
+            Username = username;
+            Repository = repository;
+            Id = id;
+            SaveOnSelect = saveOnSelect;
+            SelectedMilestone = selectedMilestone;
 
-            this.Bind(x => x.SelectedMilestone).Subscribe(x => SelectMilestone(x));
+            Title = "Milestones";
+
+            this.WhenAnyValue(x => x.SelectedMilestone)
+                .Skip(1)
+                .Subscribe(x => SelectMilestone(x));
         }
 
         private async Task SelectMilestone(MilestoneModel x)
@@ -69,7 +59,7 @@ namespace CodeHub.Core.ViewModels.Issues
                     if (x != null) milestone = x.Number;
                     var updateReq = this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].UpdateMilestone(milestone);
                     var newIssue = await this.GetApplication().Client.ExecuteAsync(updateReq);
-                    Messenger.Publish(new IssueEditMessage(this) { Issue = newIssue.Data });
+                    Messenger.Publish(new IssueEditMessage { Issue = newIssue.Data });
                 }
                 catch
                 {
@@ -82,23 +72,15 @@ namespace CodeHub.Core.ViewModels.Issues
             }
             else
             {
-                Messenger.Publish(new SelectedMilestoneMessage(this) { Milestone = x });
+                Messenger.Publish(new SelectedMilestoneMessage { Milestone = x });
             }
 
-            ChangePresentation(new MvvmCross.Core.ViewModels.MvxClosePresentationHint(this));
+            Dismiss();
         }
 
         protected override Task Load()
         {
             return Milestones.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].Milestones.GetAll());
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
-            public long Id { get; set; }
-            public bool SaveOnSelect { get; set; }
         }
     }
 }

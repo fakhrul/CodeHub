@@ -3,7 +3,7 @@ using CoreGraphics;
 using UIKit;
 using Foundation;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public abstract class OwnerDrawnElement : Element, IElementSizing
     {        

@@ -1,9 +1,9 @@
 using System;
 using UIKit;
-using CodeHub.iOS;
+using CodeHub;
 using CodeHub.Core.Utilities;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class UserElement : StringElement
     {

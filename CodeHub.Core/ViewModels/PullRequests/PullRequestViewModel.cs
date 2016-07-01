@@ -1,22 +1,21 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using MvvmCross.Core.ViewModels;
 using GitHubSharp.Models;
 using CodeHub.Core.Services;
-using MvvmCross.Plugins.Messenger;
 using CodeHub.Core.ViewModels.Issues;
-using CodeHub.Core.ViewModels;
 using CodeHub.Core.Messages;
 using System.Reactive.Linq;
-using CodeHub.Core.ViewModels.User;
+using CodeHub.Core.ViewModels.Users;
+using ReactiveUI;
+using System.Reactive;
 
 namespace CodeHub.Core.ViewModels.PullRequests
 {
     public class PullRequestViewModel : LoadableViewModel
     {
-        private MvxSubscriptionToken _issueEditSubscription;
-        private MvxSubscriptionToken _pullRequestEditSubscription;
+        private readonly IDisposable _issueEditSubscription;
+        private readonly IDisposable _pullRequestEditSubscription;
         private readonly IFeaturesService _featuresService;
 
         public long Id
@@ -91,143 +90,92 @@ namespace CodeHub.Core.ViewModels.PullRequests
             private set { this.RaiseAndSetIfChanged(ref _isClosed, value); }
         }
 
-        private ICommand _goToAssigneeCommand;
+        public IReactiveCommand<object> GoToAssigneeCommand { get; }
 
-        public ICommand GoToAssigneeCommand
-        {
-            get
-            {
-                if (_goToAssigneeCommand == null)
-                {
-                    var cmd = new MvxCommand(() =>
-                    {
-                        GetService<IViewModelTxService>().Add(Issue.Assignee);
-                        ShowViewModel<IssueAssignedToViewModel>(new IssueAssignedToViewModel.NavObject { Username = Username, Repository = Repository, Id = Id, SaveOnSelect = true });
-                    }, () => Issue != null && IsCollaborator);
+        public IReactiveCommand<object> GoToMilestoneCommand { get; }
 
-                    this.Bind(x => Issue).Subscribe(_ => cmd.RaiseCanExecuteChanged());
-                    _goToAssigneeCommand = cmd;
-                }
+        public IReactiveCommand<object> GoToLabelsCommand { get; }
 
-                return _goToAssigneeCommand;
-            }
-        }
+        public IReactiveCommand<object> GoToEditCommand { get; }
 
-        private ICommand _goToMilestoneCommand;
+        public IReactiveCommand<Unit> ToggleStateCommand { get; }
 
-        public ICommand GoToMilestoneCommand
-        {
-            get
-            { 
-                if (_goToMilestoneCommand == null)
-                {
-                    var cmd = new MvxCommand(() =>
-                    {
-                        GetService<IViewModelTxService>().Add(Issue.Milestone);
-                        ShowViewModel<IssueMilestonesViewModel>(new IssueMilestonesViewModel.NavObject { Username = Username, Repository = Repository, Id = Id, SaveOnSelect = true });
-                    }, () => Issue != null && IsCollaborator);
+        public ReactiveCommand<object> GoToOwner { get; }
 
-                    this.Bind(x => Issue).Subscribe(_ => cmd.RaiseCanExecuteChanged());
-                    _goToMilestoneCommand = cmd;
-                }
+        public IReactiveCommand<object> GoToCommitsCommand { get; } = ReactiveCommand.Create();
 
-                return _goToMilestoneCommand;
-            }
-        }
+        public IReactiveCommand<object> GoToFilesCommand { get; } = ReactiveCommand.Create();
 
-        private ICommand _goToLabelsCommand;
+        public CollectionViewModel<IssueCommentModel> Comments { get; } = new CollectionViewModel<IssueCommentModel>();
 
-        public ICommand GoToLabelsCommand
-        {
-            get
-            { 
-                if (_goToLabelsCommand == null)
-                {
-                    var cmd = new MvxCommand(() =>
-                    {
-                        GetService<IViewModelTxService>().Add(Issue.Labels);
-                        ShowViewModel<IssueLabelsViewModel>(new IssueLabelsViewModel.NavObject { Username = Username, Repository = Repository, Id = Id, SaveOnSelect = true });
-                    }, () => Issue != null && IsCollaborator);
-
-                    this.Bind(x => Issue).Subscribe(_ => cmd.RaiseCanExecuteChanged());
-                    _goToLabelsCommand = cmd;
-                }
-
-                return _goToLabelsCommand;
-            }
-        }
-
-        public ICommand GoToEditCommand
-        {
-            get
-            { 
-                return new MvxCommand(() =>
-                {
-                    GetService<IViewModelTxService>().Add(Issue);
-                    ShowViewModel<IssueEditViewModel>(new IssueEditViewModel.NavObject { Username = Username, Repository = Repository, Id = Id });
-                }, () => Issue != null && IsCollaborator); 
-            }
-        }
-
-        public ICommand ToggleStateCommand
-        {
-            get { return new MvxCommand(() => ToggleState(PullRequest.State == "open")); }
-        }
-
-        public ReactiveUI.ReactiveCommand<object> GoToOwner { get; }
-
-        public ICommand GoToCommitsCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<PullRequestCommitsViewModel>(new PullRequestCommitsViewModel.NavObject { Username = Username, Repository = Repository, PullRequestId = Id })); }
-        }
-
-        public ICommand GoToFilesCommand
-        {
-            get { return new MvxCommand(() => ShowViewModel<PullRequestFilesViewModel>(new PullRequestFilesViewModel.NavObject { Username = Username, Repository = Repository, PullRequestId = Id })); }
-        }
-
-        private readonly CollectionViewModel<IssueCommentModel> _comments = new CollectionViewModel<IssueCommentModel>();
-
-        public CollectionViewModel<IssueCommentModel> Comments
-        {
-            get { return _comments; }
-        }
-
-        private readonly CollectionViewModel<IssueEventModel> _events = new CollectionViewModel<IssueEventModel>();
-
-        public CollectionViewModel<IssueEventModel> Events
-        {
-            get { return _events; }
-        }
+        public CollectionViewModel<IssueEventModel> Events { get; } = new CollectionViewModel<IssueEventModel>();
 
         public string ConvertToMarkdown(string str)
         {
             return (GetService<IMarkdownService>().Convert(str));
         }
 
-        public PullRequestViewModel(IFeaturesService featuresService)
+        public PullRequestViewModel(string username, string repository, long id, PullRequestModel model = null)
         {
-            _featuresService = featuresService;
+            Username = username;
+            Repository = repository;
+            Id = id;
+            PullRequest = model;
 
-            this.Bind(x => x.PullRequest, true).IsNotNull().Select(x => string.Equals(x.State, "closed")).Subscribe(x => IsClosed = x);
-            GoToOwner = ReactiveUI.ReactiveCommand.Create(this.Bind(x => x.Issue, true).Select(x => x != null));
-            GoToOwner.Subscribe(_ => ShowViewModel<UserViewModel>(new UserViewModel.NavObject { Username = Issue?.User?.Login }));
-        }
+            _featuresService = GetService<IFeaturesService>();
 
-        public void Init(NavObject navObject)
-        {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
-            Id = navObject.Id;
+            this.WhenAnyValue(x => x.PullRequest)
+                .IsNotNull()
+                .Select(x => string.Equals(x.State, "closed"))
+                .Subscribe(x => IsClosed = x);
 
-            _issueEditSubscription = Messenger.SubscribeOnMainThread<IssueEditMessage>(x =>
+            GoToCommitsCommand.Subscribe(_ => NavigateTo(new PullRequestCommitsViewModel(Username, Repository, Id)));
+            GoToFilesCommand.Subscribe(_ => NavigateTo(new PullRequestFilesViewModel(Username, Repository, Id)));
+
+            GoToAssigneeCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.IsCollaborator));
+            GoToMilestoneCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.IsCollaborator));
+            GoToLabelsCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.IsCollaborator));
+
+            GoToAssigneeCommand.Subscribe(
+                _ => NavigateTo(new IssueAssignedViewModel(Username, Repository, Id, true, Issue?.User)));
+
+            GoToMilestoneCommand.Subscribe(
+                _ => NavigateTo(new IssueMilestonesViewModel(Username, Repository, Id, true, Issue?.Milestone)));
+
+            GoToLabelsCommand.Subscribe(
+                _ => NavigateTo(new IssueLabelsViewModel(Username, Repository, Id, true, Issue?.Labels)));
+
+            GoToEditCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.IsCollaborator, x => x.Issue).Select(x => x.Item1 && x.Item2 != null));
+            GoToEditCommand.Subscribe(
+                _ => NavigateTo(new IssueEditViewModel(Username, Repository, Id, Issue)));
+
+            ToggleStateCommand = ReactiveCommand.CreateAsyncTask(
+                this.WhenAnyValue(x => x.Issue).Select(x => x != null),
+                t => ToggleState(Issue.State == "open"));
+
+            MergeCommand = ReactiveCommand.CreateAsyncTask(
+                this.WhenAnyValue(x => x.PullRequest, x => x.CanPush).Select(x => CanMerge(x.Item1) && x.Item2),
+                t => Merge());
+
+            //{
+            //    get { return new MvxCommand(() => Merge(), CanMerge); }
+            //}
+            
+            GoToOwner = ReactiveCommand.Create(this.WhenAnyValue(x => x.Issue).Select(x => x != null));
+            GoToOwner
+                .Select(_ => Issue?.User?.Login)
+                .Where(x => x != null)
+                .Select(x => new UserViewModel(x))
+                .Subscribe(NavigateTo);
+
+            _issueEditSubscription = Messenger.Subscribe<IssueEditMessage>(x =>
             {
                 if (x.Issue == null || x.Issue.Number != Id)
                     return;
                 Issue = x.Issue;
             });
 
-            _pullRequestEditSubscription = Messenger.SubscribeOnMainThread<PullRequestEditMessage>(x =>
+            _pullRequestEditSubscription = Messenger.Subscribe<PullRequestEditMessage>(x =>
             {
                 if (x.PullRequest == null || x.PullRequest.Number != Id)
                     return;
@@ -256,7 +204,7 @@ namespace CodeHub.Core.ViewModels.PullRequests
             {
                 IsModifying = true;
                 var data = await this.GetApplication().Client.ExecuteAsync(this.GetApplication().Client.Users[Username].Repositories[Repository].PullRequests[Id].UpdateState(closed ? "closed" : "open")); 
-                Messenger.Publish(new PullRequestEditMessage(this) { PullRequest = data.Data });
+                Messenger.Publish(new PullRequestEditMessage { PullRequest = data.Data });
             }
             catch (Exception e)
             {
@@ -281,15 +229,15 @@ namespace CodeHub.Core.ViewModels.PullRequests
 
             var pullRequest = this.GetApplication().Client.Users[Username].Repositories[Repository].PullRequests[Id].Get();
             var t1 = this.RequestModel(pullRequest, response => PullRequest = response.Data);
-            Events.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].GetEvents()).FireAndForget();
-            Comments.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].GetComments()).FireAndForget();
-            this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].Get(), response => Issue = response.Data).FireAndForget();
+            Events.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].GetEvents()).ToBackground();
+            Comments.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].GetComments()).ToBackground();
+            this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].Get(), response => Issue = response.Data).ToBackground();
             this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[Repository].Get(), response => {
                 CanPush = response.Data.Permissions.Push;
                 ShouldShowPro = response.Data.Private && !_featuresService.IsProEnabled;
-            }).FireAndForget();
+            }).ToBackground();
             this.RequestModel(this.GetApplication().Client.Users[Username].Repositories[Repository].IsCollaborator(this.GetApplication().Account.Username), 
-                response => IsCollaborator = response.Data).FireAndForget();
+                response => IsCollaborator = response.Data).ToBackground();
             return t1;
         }
 
@@ -307,32 +255,16 @@ namespace CodeHub.Core.ViewModels.PullRequests
                 this.AlertService.Alert("Unable to Merge!", e.Message).ToBackground();
             }
 
-            await Load().FireAndForget();
+            await Load();
         }
 
-        public ICommand MergeCommand
+        public IReactiveCommand<Unit> MergeCommand { get; }
+
+        private static bool CanMerge(PullRequestModel model)
         {
-            get { return new MvxCommand(() => Merge(), CanMerge); }
-        }
-
-        private bool CanMerge()
-        {
-            if (PullRequest == null)
-                return false;
-            
-            var isClosed = string.Equals(PullRequest.State, "closed", StringComparison.OrdinalIgnoreCase);
-            var isMerged = PullRequest.Merged.GetValueOrDefault();
-
-            return CanPush && !isClosed && !isMerged;
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-
-            public string Repository { get; set; }
-
-            public long Id { get; set; }
+            var isClosed = string.Equals(model.State, "closed", StringComparison.OrdinalIgnoreCase);
+            var isMerged = model.Merged.GetValueOrDefault();
+            return !isClosed && !isMerged;
         }
     }
 }

@@ -9,7 +9,7 @@ using CoreFoundation;
 using Foundation;
 using UIKit;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class LoadMoreElement : OwnerDrawnElement
     {

@@ -2,7 +2,7 @@
 using Foundation;
 using System;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public interface IElementSizing 
     {

@@ -1,24 +1,30 @@
-using CodeHub.iOS.ViewControllers;
 using CodeHub.Core.ViewModels.Organizations;
 using UIKit;
 using CoreGraphics;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 using System;
 using System.Reactive.Linq;
+using ReactiveUI;
 
-namespace CodeHub.iOS.ViewControllers.Organizations
+namespace CodeHub.ViewControllers.Organizations
 {
-    public class OrganizationViewController : PrettyDialogViewController
+    public class OrganizationViewController : PrettyDialogViewController<OrganizationViewModel>
     {
+        public OrganizationViewController()
+        {
+        }
+
+        public OrganizationViewController(string organizationName)
+        {
+            ViewModel = new OrganizationViewModel(organizationName);
+        }
+
         public override void ViewDidLoad()
         {
             base.ViewDidLoad();
 
-            var vm = (OrganizationViewModel) ViewModel;
-
             HeaderView.SetImage(null, Images.Avatar);
-            Title = vm.Name;
-            HeaderView.Text = vm.Name;
+            HeaderView.Text = ViewModel.Username;
 
             var members = new StringElement("Members", Octicon.Person.ToImage());
             var teams = new StringElement("Teams", Octicon.Organization.ToImage());
@@ -30,19 +36,22 @@ namespace CodeHub.iOS.ViewControllers.Organizations
 
             OnActivation(d =>
             {
-                d(members.Clicked.BindCommand(vm.GoToMembersCommand));
-                d(teams.Clicked.BindCommand(vm.GoToTeamsCommand));
-                d(followers.Clicked.BindCommand(vm.GoToFollowersCommand));
-                d(events.Clicked.BindCommand(vm.GoToEventsCommand));
-                d(repos.Clicked.BindCommand(vm.GoToRepositoriesCommand));
-                d(gists.Clicked.BindCommand(vm.GoToGistsCommand));
+                members.Clicked.InvokeCommand(ViewModel.GoToMembersCommand).AddTo(d);
+                teams.Clicked.InvokeCommand(ViewModel.GoToTeamsCommand).AddTo(d);
+                followers.Clicked.InvokeCommand(ViewModel.GoToFollowersCommand).AddTo(d);
+                events.Clicked.InvokeCommand(ViewModel.GoToEventsCommand).AddTo(d);
+                repos.Clicked.InvokeCommand(ViewModel.GoToRepositoriesCommand).AddTo(d);
+                gists.Clicked.InvokeCommand(ViewModel.GoToGistsCommand).AddTo(d);
 
-                d(vm.Bind(x => x.Organization, true).Where(x => x != null).Subscribe(x =>
-                {
-                    HeaderView.SubText = string.IsNullOrWhiteSpace(x.Name) ? x.Login : x.Name;
-                    HeaderView.SetImage(x.AvatarUrl, Images.Avatar);
-                    RefreshHeaderView();
-                }));
+                this.WhenAnyValue(x => x.ViewModel.Organization)
+                    .Where(x => x != null)
+                    .Subscribe(x =>
+                    {
+                        HeaderView.SubText = string.IsNullOrWhiteSpace(x.Name) ? x.Login : x.Name;
+                        HeaderView.SetImage(x.AvatarUrl, Images.Avatar);
+                        RefreshHeaderView();
+                    })
+                    .AddTo(d);
             });
         }
     }

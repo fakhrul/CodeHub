@@ -14,10 +14,10 @@ using UIKit;
 using CoreGraphics;
 using System.Collections.Generic;
 using Foundation;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 using System.Linq;
 
-namespace CodeHub.iOS.ViewControllers
+namespace CodeHub.ViewControllers
 {
     /// <summary>
     ///   The DialogViewController is the main entry point to use MonoTouch.Dialog,

@@ -1,9 +1,9 @@
 using System;
 using System.Threading.Tasks;
-using MvvmCross.Core.ViewModels;
-using CodeHub.Core.ViewModels;
 using GitHubSharp.Models;
 using System.Linq;
+using ReactiveUI;
+using System.Reactive.Linq;
 
 namespace CodeHub.Core.ViewModels.Source
 {
@@ -20,38 +20,36 @@ namespace CodeHub.Core.ViewModels.Source
 
         public string Repository { get; private set; }
 
-        public CollectionViewModel<ViewObject> Items { get; }
+        public CollectionViewModel<ViewObject> Items { get; } = new CollectionViewModel<ViewObject>();
 
-        public IMvxCommand GoToSourceCommand
-        {
-            get { return new MvxCommand<ViewObject>(GoToSource); }
-        }
+        public ReactiveCommand<object> GoToSourceCommand { get; }
 
-        private void GoToSource(ViewObject obj)
+        public BranchesAndTagsViewModel(string username, string repository, bool isShowingBranches = true)
         {
-            if (obj.Object is BranchModel)
+            Username = username;
+            Repository = repository;
+            SelectedFilter = isShowingBranches ? 0 : 1;
+
+            Title = "Source";
+
+            this.WhenAnyValue(x => x.SelectedFilter)
+                .Skip(1)
+                .InvokeCommand(LoadCommand);
+
+            GoToSourceCommand = ReactiveCommand.Create();
+            GoToSourceCommand.OfType<ViewObject>().Subscribe(obj =>
             {
-                var x = obj.Object as BranchModel;
-                ShowViewModel<SourceTreeViewModel>(new SourceTreeViewModel.NavObject { Username = Username, Repository = Repository, Branch = x.Name, TrueBranch = true });
-            }
-            else if (obj.Object is TagModel)
-            {
-                var x = obj.Object as TagModel;
-                ShowViewModel<SourceTreeViewModel>(new SourceTreeViewModel.NavObject { Username = Username, Repository = Repository, Branch = x.Commit.Sha });
-            }
-        }
-
-        public BranchesAndTagsViewModel()
-        {
-            Items = new CollectionViewModel<ViewObject>();
-            this.Bind(x => x.SelectedFilter).Subscribe(x => LoadCommand.Execute(false));
-        }
-
-        public void Init(NavObject navObject)
-        {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
-            _selectedFilter = navObject.IsShowingBranches ? 0 : 1;
+                if (obj.Object is BranchModel)
+                {
+                    var x = obj.Object as BranchModel;
+                    NavigateTo(new SourceTreeViewModel(Username, Repository, x.Name, trueBranch: true));
+                }
+                else if (obj.Object is TagModel)
+                {
+                    var x = obj.Object as TagModel;
+                    NavigateTo(new SourceTreeViewModel(Username, Repository, x.Commit.Sha, trueBranch: false));
+                }
+            });
         }
 
         protected override Task Load()
@@ -80,18 +78,6 @@ namespace CodeHub.Core.ViewModels.Source
         {
             public string Name { get; set; }
             public object Object { get; set; }
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
-            public bool IsShowingBranches { get; set; }
-
-            public NavObject()
-            {
-                IsShowingBranches = true;
-            }
         }
     }
 }

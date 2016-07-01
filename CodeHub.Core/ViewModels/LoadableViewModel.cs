@@ -1,23 +1,20 @@
 using GitHubSharp;
 using System.Threading.Tasks;
-using MvvmCross.Core.ViewModels;
-using CodeHub.Core.ViewModels;
-using System.Windows.Input;
 using System.Net;
 using System;
+using ReactiveUI;
+using System.Reactive;
 
 namespace CodeHub.Core.ViewModels
 {
-    public abstract class LoadableViewModel : BaseViewModel
+    public interface ILoadableViewModel
     {
-        public ICommand LoadCommand { get; }
+        IReactiveCommand<Unit> LoadCommand { get; }
+    }
 
-        private bool _isLoading;
-        public bool IsLoading
-        {
-            get { return _isLoading; }
-            private set { this.RaiseAndSetIfChanged(ref _isLoading, value); }
-        }
+    public abstract class LoadableViewModel : BaseViewModel, ILoadableViewModel
+    {
+        public IReactiveCommand<Unit> LoadCommand { get; }
 
         private async Task LoadResource()
         {
@@ -42,11 +39,21 @@ namespace CodeHub.Core.ViewModels
             }
         }
 
-        protected async Task ExecuteLoadResource()
+        protected LoadableViewModel()
+        {
+            LoadCommand = ReactiveCommand.CreateAsyncTask(_ => HandleLoadCommand());
+        }
+
+        private async Task HandleLoadCommand()
         {
             try
             {
                 await LoadResource();
+            }
+            catch (OperationCanceledException e)
+            {
+                // The operation was canceled... Don't worry
+                System.Diagnostics.Debug.WriteLine("The operation was canceled: " + e.Message);
             }
             catch (System.IO.IOException)
             {
@@ -56,32 +63,9 @@ namespace CodeHub.Core.ViewModels
             {
                 DisplayAlert(e.Message);
             }
-        }
-
-        protected LoadableViewModel()
-        {
-            LoadCommand = new MvxCommand<bool?>(x => HandleLoadCommand(), _ => !IsLoading);
-        }
-
-        private async Task HandleLoadCommand()
-        {
-            try
-            {
-                IsLoading = true;
-                await ExecuteLoadResource();
-            }
-            catch (OperationCanceledException e)
-            {
-                // The operation was canceled... Don't worry
-                System.Diagnostics.Debug.WriteLine("The operation was canceled: " + e.Message);
-            }
             catch (Exception e)
             {
                 DisplayAlert("The request to load this item did not complete successfuly! " + e.Message);
-            }
-            finally
-            {
-                IsLoading = false;
             }
         }
 

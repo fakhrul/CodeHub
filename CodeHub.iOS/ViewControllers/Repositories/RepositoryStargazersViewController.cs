@@ -1,23 +1,14 @@
-using CodeHub.iOS.ViewControllers.Users;
+using CodeHub.Core.ViewModels.Repositories;
+using CodeHub.ViewControllers.Users;
 
-namespace CodeHub.iOS.ViewControllers.Repositories
+namespace CodeHub.ViewControllers.Repositories
 {
-    public class RepositoryStargazersViewController : BaseUserCollectionViewController
+    public class RepositoryStargazersViewController : UsersViewController<RepositoryStargazersViewModel>
     {
-        public RepositoryStargazersViewController()
-            : base("There are no stargazers.")
-        {
-            Title = "Stargazers";
-        }
     }
 
-    public class RepositoryWatchersViewController : BaseUserCollectionViewController
+    public class RepositoryWatchersViewController : UsersViewController<RepositoryWatchersViewModel>
     {
-        public RepositoryWatchersViewController()
-            : base("There are no watchers.")
-        {
-            Title = "Watchers";
-        }
     }
 }
 

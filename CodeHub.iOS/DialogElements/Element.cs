@@ -2,7 +2,7 @@
 using Foundation;
 using UIKit;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public abstract class Element 
     {

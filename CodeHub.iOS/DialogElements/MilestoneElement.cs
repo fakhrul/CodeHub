@@ -1,9 +1,9 @@
 using System;
 using Foundation;
 using UIKit;
-using CodeHub.iOS.TableViewCells;
+using CodeHub.TableViewCells;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class MilestoneElement : Element
     {

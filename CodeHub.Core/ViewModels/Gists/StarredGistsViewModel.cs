@@ -6,6 +6,11 @@ namespace CodeHub.Core.ViewModels.Gists
 {
     public class StarredGistsViewModel : GistsViewModel
     {
+        public StarredGistsViewModel()
+        {
+            Title = "Starred Gists";
+        }
+
         protected override GitHubRequest<List<GistModel>> CreateRequest()
         {
             return this.GetApplication().Client.Gists.GetStarredGists();

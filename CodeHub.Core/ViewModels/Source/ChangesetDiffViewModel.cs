@@ -1,17 +1,11 @@
-using System;
-using CodeHub.Core.ViewModels;
 using System.Threading.Tasks;
 using GitHubSharp.Models;
-using CodeHub.Core.Services;
-using System.Collections.Generic;
 using System.Linq;
-using MvvmCross.Platform;
 
 namespace CodeHub.Core.ViewModels.Source
 {
     public class ChangesetDiffViewModel : FileSourceViewModel
     {
-        private readonly CollectionViewModel<CommentModel> _comments = new CollectionViewModel<CommentModel>();
         private CommitModel.CommitFileModel _commitFileModel;
         private string _actualFilename;
 
@@ -23,17 +17,15 @@ namespace CodeHub.Core.ViewModels.Source
 
         public string Filename { get; private set; }
 
-        public CollectionViewModel<CommentModel> Comments
-        {
-            get { return _comments; }
-        }
+        public CollectionViewModel<CommentModel> Comments { get; } = new CollectionViewModel<CommentModel>();
 
-        public void Init(NavObject navObject)
+        public ChangesetDiffViewModel(string username, string repository, string branch, string filename,
+                                     CommitModel.CommitFileModel commitFileModel = null)
         {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
-            Branch = navObject.Branch;
-            Filename = navObject.Filename;
+            Username = username;
+            Repository = repository;
+            Branch = branch;
+            Filename = filename;
 
             _actualFilename = System.IO.Path.GetFileName(Filename);
             if (_actualFilename == null)
@@ -41,7 +33,7 @@ namespace CodeHub.Core.ViewModels.Source
 
             Title = _actualFilename;
 
-            _commitFileModel = Mvx.Resolve<IViewModelTxService>().Get() as CommitModel.CommitFileModel;
+            _commitFileModel = commitFileModel;
         }
 
         protected override async Task Load()
@@ -61,14 +53,6 @@ namespace CodeHub.Core.ViewModels.Source
         {
             var c = await this.GetApplication().Client.ExecuteAsync(this.GetApplication().Client.Users[Username].Repositories[Repository].Commits[Branch].Comments.Create(comment, Filename, line));
             Comments.Items.Add(c.Data);
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
-            public string Branch { get; set; }
-            public string Filename { get; set; }
         }
     }
 }

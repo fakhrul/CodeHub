@@ -1,9 +1,7 @@
 ﻿using UIKit;
-using CodeHub.Core.ViewModels;
-using CodeHub.iOS.ViewControllers;
 using System;
 
-namespace CodeHub.iOS.ViewControllers.Walkthrough
+namespace CodeHub.ViewControllers.Walkthrough
 {
     public partial class FeedbackViewController : BaseViewController
     {
@@ -25,8 +23,14 @@ namespace CodeHub.iOS.ViewControllers.Walkthrough
             UserVoiceButton.Layer.CornerRadius = 6f;
 
             OnActivation(d => {
-                d(GitHubButton.GetClickedObservable().Subscribe(_ => ShowWebPage("https://github.com/thedillonb/codehub")));
-                d(UserVoiceButton.GetClickedObservable().Subscribe(_ => ShowWebPage("https://codehub.uservoice.com")));
+                GitHubButton
+                    .GetClickedObservable()
+                    .Subscribe(_ => ShowWebPage("https://github.com/thedillonb/codehub"))
+                    .AddTo(d);
+                UserVoiceButton
+                    .GetClickedObservable()
+                    .Subscribe(_ => ShowWebPage("https://codehub.uservoice.com"))
+                    .AddTo(d);
             });
         }
 

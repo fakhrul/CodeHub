@@ -2,9 +2,50 @@
 using UIKit;
 using CoreGraphics;
 using Foundation;
+using ReactiveUI;
+using CodeHub.Core.ViewModels;
+using System.Reactive.Linq;
 
-namespace CodeHub.iOS.ViewControllers
+namespace CodeHub.ViewControllers
 {
+    public abstract class TableViewController<TViewModel> : TableViewController, IViewFor<TViewModel> where TViewModel : class
+    {
+        private TViewModel _viewModel;
+        public TViewModel ViewModel
+        {
+            get { return _viewModel; }
+            set { this.RaiseAndSetIfChanged(ref _viewModel, value); }
+        }
+
+        object IViewFor.ViewModel
+        {
+            get { return ViewModel; }
+            set { ViewModel = (TViewModel)value; }
+        }
+
+        protected TableViewController(UITableViewStyle style = UITableViewStyle.Plain)
+            : base(style)
+        {
+            Appearing
+                .Take(1)
+                .Select(_ => this.WhenAnyValue(x => x.ViewModel))
+                .Switch()
+                .OfType<ILoadableViewModel>()
+                .Select(x => x.LoadCommand)
+                .Subscribe(x => x.ExecuteIfCan());
+
+            OnActivation(disposable =>
+            {
+                this.WhenAnyValue(x => x.ViewModel)
+                    .OfType<IProvidesTitle>()
+                    .Select(x => x.WhenAnyValue(y => y.Title))
+                    .Switch()
+                    .Subscribe(x => Title = x)
+                    .AddTo(disposable);
+            });
+        }
+    }
+
     public class TableViewController : BaseViewController
     {
         private readonly Lazy<UITableView> _tableView;

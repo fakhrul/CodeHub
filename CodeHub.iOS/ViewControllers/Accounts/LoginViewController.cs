@@ -1,19 +1,18 @@
 using System;
 using CodeHub.Core.ViewModels.Accounts;
-using MvvmCross.Platform;
-using CodeHub.iOS.Utilities;
+using CodeHub.Utilities;
 using Foundation;
 using WebKit;
 using CodeHub.Core.Services;
-using CodeHub.iOS.Services;
-using CodeHub.Core.Factories;
-using CodeHub.iOS.ViewControllers;
+using CodeHub.Services;
 using System.Reactive.Linq;
-using CodeHub.iOS.Views;
+using CodeHub.Views;
+using Splat;
+using ReactiveUI;
 
-namespace CodeHub.iOS.ViewControllers.Accounts
+namespace CodeHub.ViewControllers.Accounts
 {
-    public class LoginViewController : BaseWebViewController
+    public class LoginViewController : BaseWebViewController<LoginViewModel>
     {
         private static readonly string HasSeenWelcomeKey = "HAS_SEEN_OAUTH_INFO";
 
@@ -21,18 +20,11 @@ namespace CodeHub.iOS.ViewControllers.Accounts
             "In the following screen you will be prompted for your GitHub credentials. This is done through GitHub's OAuth portal, " +
             "the recommended way to authenticate.\n\nCodeHub does not save your password. Instead, only the OAuth " + 
             "token is saved on the device which you may revoke at any time.";
-        
-
-        public LoginViewModel ViewModel { get; }
 
         public LoginViewController() 
-            : base(true)
         {
-            Title = "Login";
-            ViewModel = new LoginViewModel(Mvx.Resolve<ILoginFactory>());
-            ViewModel.Init(new LoginViewModel.NavObject());
-
-            OnActivation(d => d(ViewModel.Bind(x => x.IsLoggingIn).SubscribeStatus("Logging in...")));
+            ViewModel = new LoginViewModel();
+            OnActivation(d => this.WhenAnyValue(x => x.ViewModel.IsLoggingIn).SubscribeStatus("Logging in...").AddTo(d));
         }
 
         public override void ViewDidLoad()
@@ -41,7 +33,7 @@ namespace CodeHub.iOS.ViewControllers.Accounts
             LoadRequest();
 
             bool hasSeenWelcome = false;
-            var defaultValueService = Mvx.Resolve<IDefaultValueService>();
+            var defaultValueService = Locator.Current.GetService<IDefaultValueService>();
             defaultValueService.TryGet(HasSeenWelcomeKey, out hasSeenWelcome);
 
             if (!hasSeenWelcome)
@@ -56,7 +48,7 @@ namespace CodeHub.iOS.ViewControllers.Accounts
             }
         }
 
-        protected override bool ShouldStartLoad(WKWebView webView, WKNavigationAction navigationAction)
+        public override bool ShouldStartLoad(WKWebView webView, WKNavigationAction navigationAction)
         {
             try
             {
@@ -64,13 +56,13 @@ namespace CodeHub.iOS.ViewControllers.Accounts
                 if (navigationAction.Request.Url.Host == "dillonbuchanan.com")
                 {
                     var code = navigationAction.Request.Url.Query.Split('=')[1];
-                    ViewModel.Login(code);
+                    ViewModel.Login(code).ToBackground();
                     return false;
                 }
     
                 if (navigationAction.Request.Url.AbsoluteString.StartsWith("https://github.com/join"))
                 {
-                    Mvx.Resolve<IAlertDialogService>().Alert("Error", "Sorry, due to restrictions, creating GitHub accounts cannot be done in CodeHub.");
+                    Locator.Current.GetService<IAlertDialogService>().Alert("Error", "Sorry, due to restrictions, creating GitHub accounts cannot be done in CodeHub.");
                     return false;
                 }
 
@@ -78,12 +70,12 @@ namespace CodeHub.iOS.ViewControllers.Accounts
             }
             catch 
             {
-                Mvx.Resolve<IAlertDialogService>().Alert("Error Logging in!", "CodeHub is unable to login you in due to an unexpected error. Please try again.");
+                Locator.Current.GetService<IAlertDialogService>().Alert("Error Logging in!", "CodeHub is unable to login you in due to an unexpected error. Please try again.");
                 return false;
             }
         }
 
-        protected override void OnLoadError(NSError e)
+        public override void OnLoadError(NSError e)
         {
             base.OnLoadError(e);
 

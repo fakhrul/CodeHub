@@ -1,6 +1,6 @@
 ﻿using UIKit;
 
-namespace CodeHub.iOS.ViewControllers
+namespace CodeHub.ViewControllers
 {
     public class ThemedNavigationController : UINavigationController
     {

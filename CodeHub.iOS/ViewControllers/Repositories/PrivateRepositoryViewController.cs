@@ -1,13 +1,14 @@
 ﻿using System;
 using UIKit;
-using CodeHub.iOS.ViewControllers.Application;
+using CodeHub.ViewControllers.Application;
 using System.Reactive.Disposables;
 
-namespace CodeHub.iOS.ViewControllers.Repositories
+namespace CodeHub.ViewControllers.Repositories
 {
     public partial class PrivateRepositoryViewController : BaseViewController
     {
-        public PrivateRepositoryViewController() : base("PrivateRepositoryViewController", null)
+        public PrivateRepositoryViewController() 
+            : base("PrivateRepositoryViewController", null)
         {
         }
 
@@ -20,7 +21,7 @@ namespace CodeHub.iOS.ViewControllers.Repositories
             Button.SetTitleColor(UIColor.White, UIControlState.Normal);
             Button.Layer.CornerRadius = 6f;
 
-            OnActivation(d => d(Button.GetClickedObservable().Subscribe(_ => this.PresentUpgradeViewController())));
+            OnActivation(d => Button.GetClickedObservable().Subscribe(_ => this.PresentUpgradeViewController()).AddTo(d));
         }
     }
 
@@ -39,7 +40,8 @@ namespace CodeHub.iOS.ViewControllers.Repositories
 
             vc.View.BackgroundColor = Theme.CurrentTheme.PrimaryColor;
 
-            @this.NavigationItem.RightBarButtonItem.Do(x => x.Enabled = false);
+            if (@this.NavigationItem.RightBarButtonItem != null)
+                @this.NavigationItem.RightBarButtonItem.Enabled = false;
 
             return Disposable.Create(() =>
             {

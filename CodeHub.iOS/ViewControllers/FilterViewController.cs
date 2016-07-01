@@ -1,11 +1,10 @@
 using System;
 using System.Linq;
-using CodeHub.iOS.ViewControllers;
 using UIKit;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 using Humanizer;
 
-namespace CodeHub.iOS.ViewControllers
+namespace CodeHub.ViewControllers
 {
     public abstract class FilterViewController : DialogViewController
     {
@@ -19,11 +18,11 @@ namespace CodeHub.iOS.ViewControllers
 
             OnActivation(d =>
             {
-                d(cancel.GetClickedObservable().Subscribe(_ => DismissViewController(true, null)));
-                d(save.GetClickedObservable().Subscribe(_ => {
+                cancel.GetClickedObservable().Subscribe(_ => DismissViewController(true, null)).AddTo(d);
+                save.GetClickedObservable().Subscribe(_ => {
                     ApplyButtonPressed();
                     DismissViewController(true, null); 
-                }));
+                }).AddTo(d);
             });
         }
 

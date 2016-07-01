@@ -1,9 +1,10 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
+using CodeHub.ViewControllers;
+using Foundation;
 using UIKit;
 
-namespace CodeHub.iOS.Utilities
+namespace CodeHub.Utilities
 {
     public static class ViewControllerExtensions
     {
@@ -26,13 +27,11 @@ namespace CodeHub.iOS.Utilities
 
             try
             {
-                NetworkActivity.PushNetworkActive();
-                return await work();
+                using (LoadingIndicator.Create())
+                    return await work();
             }
             finally
             {
-                NetworkActivity.PopNetworkActive();
-
                 hud.Hide();
 
                 //Enable all the toolbar items
@@ -58,13 +57,11 @@ namespace CodeHub.iOS.Utilities
 
             try
             {
-                NetworkActivity.PushNetworkActive();
-                await work();
+                using (LoadingIndicator.Create())
+                    await work();
             }
             finally
             {
-                NetworkActivity.PopNetworkActive();
-
                 hud.Hide();
 
                 //Enable all the toolbar items
@@ -74,6 +71,43 @@ namespace CodeHub.iOS.Utilities
                         t.Enabled = true;
                 }
             }
+        }
+
+        public static void AddTableView(this BaseViewController controller, UITableView tableView)
+        {
+            NSObject hideNotification = null, showNotification = null;
+
+            tableView.Frame = controller.View.Bounds;
+            tableView.AutoresizingMask = UIViewAutoresizing.FlexibleHeight |
+                UIViewAutoresizing.FlexibleWidth | UIViewAutoresizing.FlexibleTopMargin;
+            controller.Add(tableView);
+
+            controller.Appearing.Subscribe(_ =>
+            {
+                hideNotification = NSNotificationCenter.DefaultCenter.AddObserver(UIKeyboard.WillHideNotification, notification =>
+                {
+                    tableView.ContentInset = UIEdgeInsets.Zero;
+                    tableView.ScrollIndicatorInsets = UIEdgeInsets.Zero;
+                });
+
+                showNotification = NSNotificationCenter.DefaultCenter.AddObserver(UIKeyboard.WillShowNotification, notification =>
+                {
+                    var keyboardFrame = UIKeyboard.FrameEndFromNotification(notification);
+                    var inset = new UIEdgeInsets(0, 0, keyboardFrame.Height, 0);
+                    tableView.ContentInset = inset;
+                    tableView.ScrollIndicatorInsets = inset;
+                });
+            });
+
+            controller.Disappearing.Subscribe(_ =>
+            {
+                controller.View.EndEditing(true);
+
+                if (hideNotification != null)
+                    NSNotificationCenter.DefaultCenter.RemoveObserver(hideNotification);
+                if (showNotification != null)
+                    NSNotificationCenter.DefaultCenter.RemoveObserver(showNotification);
+            });
         }
     }
 }

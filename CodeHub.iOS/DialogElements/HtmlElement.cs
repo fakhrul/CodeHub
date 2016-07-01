@@ -7,7 +7,7 @@ using System.Reactive.Linq;
 using WebKit;
 using System.Threading.Tasks;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class HtmlElement : Element, IElementSizing, IDisposable
     {

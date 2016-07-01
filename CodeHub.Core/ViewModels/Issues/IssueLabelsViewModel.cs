@@ -1,12 +1,10 @@
-using System;
-using CodeHub.Core.ViewModels;
 using System.Threading.Tasks;
 using GitHubSharp.Models;
 using System.Collections.Generic;
 using CodeHub.Core.Messages;
 using System.Linq;
-using System.Windows.Input;
-using MvvmCross.Core.ViewModels;
+using ReactiveUI;
+using System.Reactive;
 
 namespace CodeHub.Core.ViewModels.Issues
 {
@@ -18,23 +16,12 @@ namespace CodeHub.Core.ViewModels.Issues
         public bool IsSaving
         {
             get { return _isSaving; }
-            private set {
-                _isSaving = value;
-                RaisePropertyChanged(() => IsSaving);
-            }
+            private set { this.RaiseAndSetIfChanged(ref _isSaving, value); }
         }
 
-        private readonly CollectionViewModel<LabelModel> _labels = new CollectionViewModel<LabelModel>();
-        public CollectionViewModel<LabelModel> Labels
-        {
-            get { return _labels; }
-        }
+        public CollectionViewModel<LabelModel> Labels { get; } = new CollectionViewModel<LabelModel>();
 
-        private readonly CollectionViewModel<LabelModel> _selectedLabels = new CollectionViewModel<LabelModel>();
-        public CollectionViewModel<LabelModel> SelectedLabels
-        {
-            get { return _selectedLabels; }
-        }
+        public CollectionViewModel<LabelModel> SelectedLabels { get; } = new CollectionViewModel<LabelModel>();
 
         public string Username  { get; private set; }
 
@@ -44,20 +31,20 @@ namespace CodeHub.Core.ViewModels.Issues
 
         public bool SaveOnSelect { get; private set; }
 
-        public void Init(NavObject navObject)
-        {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
-            Id = navObject.Id;
-            SaveOnSelect = navObject.SaveOnSelect;
+        public IReactiveCommand<Unit> SaveLabelChoices { get; }
 
-            _originalLables = GetService<CodeHub.Core.Services.IViewModelTxService>().Get() as IEnumerable<LabelModel>;
+        public IssueLabelsViewModel(string username, string repository, long id, bool saveOnSelect, IEnumerable<LabelModel> selectedLabels = null)
+        {
+            Username = username;
+            Repository = repository;
+            Id = id;
+            SaveOnSelect = saveOnSelect;
+            _originalLables = selectedLabels?.ToList();
             SelectedLabels.Items.Reset(_originalLables);
-        }
 
-        public ICommand SaveLabelChoices
-        {
-            get { return new MvxCommand(() => SelectLabels(SelectedLabels)); }
+            Title = "Labels";
+
+            SaveLabelChoices = ReactiveCommand.CreateAsyncTask(t => SelectLabels(SelectedLabels));
         }
 
         private async Task SelectLabels(IEnumerable<LabelModel> x)
@@ -65,7 +52,7 @@ namespace CodeHub.Core.ViewModels.Issues
             //If nothing has changed, dont do anything...
             if (_originalLables != null && _originalLables.Count() == x.Count() && _originalLables.Intersect(x).Count() == x.Count())
             {
-                ChangePresentation(new MvxClosePresentationHint(this));
+                Dismiss();
                 return;
             }
                 
@@ -77,7 +64,7 @@ namespace CodeHub.Core.ViewModels.Issues
                     var labels = x != null ? x.Select(y => y.Name).ToArray() : null;
                     var updateReq = this.GetApplication().Client.Users[Username].Repositories[Repository].Issues[Id].UpdateLabels(labels);
                     var newIssue = await this.GetApplication().Client.ExecuteAsync(updateReq);
-                    Messenger.Publish(new IssueEditMessage(this) { Issue = newIssue.Data });
+                    Messenger.Publish(new IssueEditMessage { Issue = newIssue.Data });
                 }
                 catch
                 {
@@ -90,10 +77,10 @@ namespace CodeHub.Core.ViewModels.Issues
             }
             else
             {
-                Messenger.Publish(new SelectIssueLabelsMessage(this) { Labels = SelectedLabels.Items.ToArray() });
+                Messenger.Publish(new SelectIssueLabelsMessage { Labels = SelectedLabels.Items.ToArray() });
             }
 
-            ChangePresentation(new MvxClosePresentationHint(this));
+            Dismiss();
         }
 
         protected override Task Load()

@@ -3,7 +3,7 @@ using CoreGraphics;
 using UIKit;
 using Foundation;
 
-namespace CodeHub.iOS
+namespace CodeHub
 {
     public static class Graphics 
     {

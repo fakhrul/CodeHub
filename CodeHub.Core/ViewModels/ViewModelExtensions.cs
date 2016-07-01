@@ -1,29 +1,27 @@
 using System;
 using System.Threading.Tasks;
-using MvvmCross.Core.ViewModels;
-using CodeHub.Core.ViewModels;
 using GitHubSharp;
 using System.Collections.Generic;
 using CodeHub.Core.Services;
 using System.ComponentModel;
 using System.Collections.Specialized;
-using MvvmCross.Platform;
 using System.Reactive.Linq;
 using System.Reactive;
-using System.Reactive.Disposables;
+using Splat;
+using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels
 {
     public static class ViewModelExtensions
     {
-        public static async Task RequestModel<TRequest>(this MvxViewModel viewModel, GitHubRequest<TRequest> request, Action<GitHubResponse<TRequest>> update) where TRequest : new()
+        public static async Task RequestModel<TRequest>(this ReactiveObject viewModel, GitHubRequest<TRequest> request, Action<GitHubResponse<TRequest>> update) where TRequest : new()
         {
-            var application = Mvx.Resolve<IApplicationService>();
+            var application = Locator.Current.GetService<IApplicationService>();
             var result = await application.Client.ExecuteAsync(request);
             update(result);
         }
 
-        public static void CreateMore<T>(this MvxViewModel viewModel, GitHubResponse<T> response, 
+        public static void CreateMore<T>(this ReactiveObject viewModel, GitHubResponse<T> response, 
                                          Action<Action> assignMore, Action<T> newDataAction) where T : new()
         {
             if (response.More == null)
@@ -34,7 +32,7 @@ namespace CodeHub.Core.ViewModels
 
             Action task = () =>
             {
-                var moreResponse = Mvx.Resolve<IApplicationService>().Client.ExecuteAsync(response.More).Result;
+                var moreResponse = Locator.Current.GetService<IApplicationService>().Client.ExecuteAsync(response.More).Result;
                 viewModel.CreateMore(moreResponse, assignMore, newDataAction);
                 newDataAction(moreResponse.Data);
             };
@@ -60,38 +58,6 @@ namespace CodeHub.Core.ViewModels
 
 public static class BindExtensions
 {
-    public static IObservable<TR> Bind<T, TR>(this T viewModel, System.Linq.Expressions.Expression<Func<T, TR>> outExpr, bool activate = false) where T : INotifyPropertyChanged
-    {
-        var expr = (System.Linq.Expressions.MemberExpression) outExpr.Body;
-        var prop = (System.Reflection.PropertyInfo) expr.Member;
-        var name = prop.Name;
-        var comp = outExpr.Compile();
-
-        var ret = Observable.FromEventPattern<PropertyChangedEventHandler, PropertyChangedEventArgs>(t => viewModel.PropertyChanged += t, t => viewModel.PropertyChanged -= t)
-            .Where(x => string.Equals(x.EventArgs.PropertyName, name))
-            .Select(x => comp(viewModel));
-
-        if (!activate)
-            return ret;
-
-        var o = Observable.Create<TR>(obs => {
-            try
-            {
-                obs.OnNext(comp(viewModel));
-            }
-            catch (Exception e)
-            {
-                obs.OnError(e);
-            }
-
-            obs.OnCompleted();
-
-            return Disposable.Empty;
-        });
-
-        return o.Concat(ret);
-    }
-
     public static IObservable<Unit> BindCollection<T>(this T viewModel, System.Linq.Expressions.Expression<Func<T, INotifyCollectionChanged>> outExpr, bool activate = false) where T : INotifyPropertyChanged
     {
         var exp = outExpr.Compile();

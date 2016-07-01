@@ -1,9 +1,9 @@
 using System;
 using UIKit;
 using Foundation;
-using CodeHub.iOS.TableViewCells;
+using CodeHub.TableViewCells;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class IssueElement : Element, IElementSizing
     {       

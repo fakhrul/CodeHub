@@ -1,8 +1,8 @@
 using UIKit;
 using CoreGraphics;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     class DummyInputElement : EntryElement
     {

@@ -6,55 +6,151 @@ using CodeHub.Core.ViewModels.Events;
 using CodeHub.Core.ViewModels.Gists;
 using CodeHub.Core.ViewModels.Issues;
 using CodeHub.Core.ViewModels.Repositories;
-using CodeHub.Core.ViewModels.User;
+using CodeHub.Core.ViewModels.Users;
 using System.Linq;
 using CodeHub.Core.Utils;
-using CodeHub.Core.ViewModels.App;
 using CodeHub.Core.Messages;
 using CodeHub.Core.ViewModels.Notifications;
-using CodeHub.Core.ViewModels;
 using GitHubSharp.Models;
-using MvvmCross.Plugins.Messenger;
-using MvvmCross.Core.ViewModels;
 using ReactiveUI;
+using System;
+using Splat;
+using System.Reactive;
+using System.Threading.Tasks;
+using System.Reactive.Linq;
+using CodeHub.Core.ViewModels.Organizations;
 
 namespace CodeHub.Core.ViewModels.App
 {
-    public class MenuViewModel : BaseMenuViewModel
+    public class MenuViewModel : BaseViewModel
     {
         private readonly IApplicationService _application;
         private readonly IFeaturesService _featuresService;
-        private int _notifications;
-        private List<BasicUserModel> _organizations;
-        private readonly MvxSubscriptionToken _notificationCountToken;
+        private readonly IDisposable _notificationCountToken;
 
+        private int _notifications;
         public int Notifications
         {
             get { return _notifications; }
-            set { _notifications = value; RaisePropertyChanged(); }
+            set { this.RaiseAndSetIfChanged(ref _notifications, value); }
         }
 
+        private List<BasicUserModel> _organizations;
         public List<BasicUserModel> Organizations
         {
             get { return _organizations; }
-            set { _organizations = value; RaisePropertyChanged(); }
+            set { this.RaiseAndSetIfChanged(ref _organizations, value); }
         }
         
-        public GitHubAccount Account
-        {
-            get { return _application.Account; }
-        }
+        public GitHubAccount Account => _application.Account;
 
-        public bool ShouldShowUpgrades
-        {
-            get { return !_featuresService.IsProEnabled; }
-        }
+        public bool ShouldShowUpgrades => !_featuresService.IsProEnabled;
+
+        public IReactiveCommand<Unit> LoadCommand { get; }
         
         public MenuViewModel(IApplicationService application, IFeaturesService featuresService)
         {
-            _application = application;
-            _featuresService = featuresService;
-            _notificationCountToken = Messenger.SubscribeOnMainThread<NotificationCountMessage>(OnNotificationCountMessage);
+            _application = GetService<IApplicationService>();
+            _featuresService = GetService<IFeaturesService>();
+            _notificationCountToken = Messenger.Subscribe<NotificationCountMessage>(OnNotificationCountMessage);
+
+            LoadCommand = ReactiveCommand.CreateAsyncTask(t =>
+            {
+                var notificationRequest = _application.Client.Notifications.GetAll();
+                var req1 = _application.Client.ExecuteAsync(notificationRequest)
+                            .OnSuccess(x => Notifications = x.Data.Count);
+
+                var organizationsRequest = _application.Client.AuthenticatedUser.GetOrganizations();
+                var req2 = _application.Client.ExecuteAsync(organizationsRequest)
+                            .OnSuccess(x => Organizations = x.Data.ToList());
+
+                return Task.WhenAll(req1, req2);
+            });
+
+            GoToProfileCommand
+                .Select(_ => new UserViewModel(_application.Account.Username))
+                .Subscribe(NavigateTo);
+
+            GoToNotificationsCommand
+                .Select(_ => new NotificationsViewModel())
+                .Subscribe(NavigateTo);
+
+            GoToMyIssuesCommand
+                .Select(_ => new MyIssuesViewModel())
+                .Subscribe(NavigateTo);
+
+            GoToMyEvents
+                .Select(_ => new UserEventsViewModel(_application.Account.Username))
+                .Subscribe(NavigateTo);
+
+            GoToMyGistsCommand
+                .Select(_ => new UserGistsViewModel(_application.Account.Username))
+                .Subscribe(NavigateTo);
+
+            GoToStarredGistsCommand
+                .Select(_ => new StarredGistsViewModel())
+                .Subscribe(NavigateTo);
+
+            GoToPublicGistsCommand
+                .Select(_ => new PublicGistsViewModel())
+                .Subscribe(NavigateTo);
+
+            GoToStarredRepositoriesCommand
+                .Select(_ => new RepositoriesStarredViewModel())
+                .Subscribe(NavigateTo);
+
+            GoToOwnedRepositoriesCommand
+                .Select(_ => new UserRepositoriesViewModel(Account.Username))
+                .Subscribe(NavigateTo);
+
+            GoToExploreRepositoriesCommand
+                .Select(_ => new RepositoriesExploreViewModel())
+                .Subscribe(NavigateTo);
+
+            GoToTrendingRepositoriesCommand
+                .Select(_ => new RepositoriesTrendingViewModel())
+                .Subscribe(NavigateTo);
+
+            GoToOrganizationsCommand
+                .Select(_ => new OrganizationsViewModel(Account.Username))
+                .Subscribe(NavigateTo);
+
+            GoToNewsCommand
+                .Select(_ => new NewsViewModel())
+                .Subscribe(NavigateTo);
+
+            GoToDefaultTopView.Subscribe(_ =>
+            {
+                var startupViewName = Accounts.ActiveAccount.DefaultStartupView;
+                if (!string.IsNullOrEmpty(startupViewName))
+                {
+                    var props = from p in GetType().GetProperties()
+                                let attr = p.GetCustomAttributes(typeof(PotentialStartupViewAttribute), true)
+                                where attr.Length == 1
+                                select new { Property = p, Attribute = attr[0] as PotentialStartupViewAttribute };
+
+                    foreach (var p in props)
+                    {
+                        if (string.Equals(startupViewName, p.Attribute.Name))
+                        {
+                            (p.Property.GetValue(this) as IReactiveCommand)?.ExecuteIfCan();
+                        }
+                    }
+                }
+
+                //Oh no... Look for the last resort DefaultStartupViewAttribute
+                var deprop = (from p in GetType().GetProperties()
+                              let attr = p.GetCustomAttributes(typeof(DefaultStartupViewAttribute), true)
+                              where attr.Length == 1
+                              select new { Property = p, Attribute = attr[0] as DefaultStartupViewAttribute }).FirstOrDefault();
+
+                //That shouldn't happen...
+                if (deprop == null)
+                    return;
+                
+                var val = deprop.Property.GetValue(this);
+                (val as IReactiveCommand)?.ExecuteIfCan();
+            });
         }
 
         private void OnNotificationCountMessage(NotificationCountMessage msg)
@@ -65,128 +161,58 @@ namespace CodeHub.Core.ViewModels.App
         public IReactiveCommand<object> GoToAccountsCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("Profile")]
-        public ICommand GoToProfileCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<UserViewModel>(new UserViewModel.NavObject { Username = _application.Account.Username })); }
-        }
+        public IReactiveCommand<object> GoToProfileCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("Notifications")]
-        public ICommand GoToNotificationsCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<NotificationsViewModel>(null)); }
-        }
+        public IReactiveCommand<object> GoToNotificationsCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("My Issues")]
-        public ICommand GoToMyIssuesCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<MyIssuesViewModel>(null)); }
-        }
+        public IReactiveCommand<object> GoToMyIssuesCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("My Events")]
-        public ICommand GoToMyEvents
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<UserEventsViewModel>(new UserEventsViewModel.NavObject { Username = Account.Username })); }
-        }
+        public IReactiveCommand<object> GoToMyEvents { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("My Gists")]
-        public ICommand GoToMyGistsCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<UserGistsViewModel>(new UserGistsViewModel.NavObject { Username = Account.Username}));}
-        }
+        public IReactiveCommand<object> GoToMyGistsCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("Starred Gists")]
-        public ICommand GoToStarredGistsCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<StarredGistsViewModel>(null)); }
-        }
+        public IReactiveCommand<object> GoToStarredGistsCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("Public Gists")]
-        public ICommand GoToPublicGistsCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<PublicGistsViewModel>(null)); }
-        }
+        public IReactiveCommand<object> GoToPublicGistsCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("Starred Repositories")]
-        public ICommand GoToStarredRepositoriesCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<RepositoriesStarredViewModel>(null));}
-        }
+        public IReactiveCommand<object> GoToStarredRepositoriesCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("Owned Repositories")]
-        public ICommand GoToOwnedRepositoriesCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<UserRepositoriesViewModel>(new UserRepositoriesViewModel.NavObject { Username = Account.Username }));}
-        }
+        public IReactiveCommand<object> GoToOwnedRepositoriesCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("Explore Repositories")]
-        public ICommand GoToExploreRepositoriesCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<RepositoriesExploreViewModel>(null));}
-        }
+        public IReactiveCommand<object> GoToExploreRepositoriesCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("Trending Repositories")]
-        public ICommand GoToTrendingRepositoriesCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<RepositoriesTrendingViewModel>(null));}
-        }
-
-        public ICommand GoToOrganizationEventsCommand
-        {
-            get { return new MvxCommand<string>(x => ShowMenuViewModel<Events.UserEventsViewModel>(new Events.UserEventsViewModel.NavObject { Username = x }));}
-        }
-
-        public ICommand GoToOrganizationCommand
-        {
-            get { return new MvxCommand<string>(x => ShowMenuViewModel<Organizations.OrganizationViewModel>(new Organizations.OrganizationViewModel.NavObject { Name = x }));}
-        }
+        public IReactiveCommand<object> GoToTrendingRepositoriesCommand { get; } = ReactiveCommand.Create();
 
         [PotentialStartupViewAttribute("Organizations")]
-        public ICommand GoToOrganizationsCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<Organizations.OrganizationsViewModel>(new Organizations.OrganizationsViewModel.NavObject { Username = Account.Username }));}
-        }
+        public IReactiveCommand<object> GoToOrganizationsCommand { get; } = ReactiveCommand.Create();
 
         [DefaultStartupViewAttribute]
         [PotentialStartupViewAttribute("News")]
-        public ICommand GoToNewsCommand
+        public IReactiveCommand<object> GoToNewsCommand { get; } = ReactiveCommand.Create();
+
+        private static IAccountsService Accounts => Locator.Current.GetService<IAccountsService>();
+
+        public IReactiveCommand<object> GoToDefaultTopView { get; } = ReactiveCommand.Create();
+
+        public void DeletePinnedRepository(PinnedRepository repository)
         {
-            get { return new MvxCommand(() => ShowMenuViewModel<NewsViewModel>(null));}
+            if (repository == null) return;
+            Accounts.ActiveAccount.PinnnedRepositories.RemovePinnedRepository(repository.Id);
         }
 
-        public ICommand GoToSettingsCommand
+        public IEnumerable<PinnedRepository> PinnedRepositories
         {
-            get { return new MvxCommand(() => ShowMenuViewModel<SettingsViewModel>(null));}
-        }
-
-        public ICommand GoToSupport
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<WebBrowserViewModel>(new WebBrowserViewModel.NavObject { Url = "https://codehub.uservoice.com/" })); }
-        }
-
-        public ICommand GoToRepositoryCommand
-        {
-            get { return new MvxCommand<RepositoryIdentifier>(x => ShowMenuViewModel<RepositoryViewModel>(new RepositoryViewModel.NavObject { Username = x.Owner, Repository = x.Name }));}
-        }
-
-        public ICommand GoToUpgradesCommand
-        {
-            get { return new MvxCommand(() => ShowMenuViewModel<UpgradeViewModel>(null)); }
-        }
-
-        public ICommand LoadCommand
-        {
-            get { return new MvxCommand(Load);}    
-        }
-
-        private void Load()
-        {
-            var notificationRequest = this.GetApplication().Client.Notifications.GetAll();
-            this.GetApplication().Client.ExecuteAsync(notificationRequest)
-                .ToBackground(x => Notifications = x.Data.Count);
-
-            var organizationsRequest = this.GetApplication().Client.AuthenticatedUser.GetOrganizations();
-            this.GetApplication().Client.ExecuteAsync(organizationsRequest)
-                .ToBackground(x => Organizations = x.Data.ToList());
+            get { return Accounts.ActiveAccount.PinnnedRepositories; }
         }
 
 //
@@ -207,13 +233,13 @@ namespace CodeHub.Core.ViewModels.App
 //                {
 //                    var result = await alertDialog.PromptYesNo("Push Notifications", "Would you like to enable push notifications for this account?");
 //                    if (result)
-//                        Task.Run(() => push.Register()).FireAndForget();
+//                        Task.Run(() => push.Register()).ToBackground();
 //                    Account.IsPushNotificationsEnabled = result;
 //                    Accounts.Update(Account);
 //                }
 //                else if (Account.IsPushNotificationsEnabled.HasValue && Account.IsPushNotificationsEnabled.Value)
 //                {
-//                    Task.Run(() => push.Register()).FireAndForget();
+//                    Task.Run(() => push.Register()).ToBackground();
 //                }
 //            }
 //            catch (Exception e)

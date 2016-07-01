@@ -1,9 +1,9 @@
 using System;
 using UIKit;
 using Foundation;
-using CodeHub.iOS;
+using CodeHub;
 
-namespace CodeHub.iOS.Views
+namespace CodeHub.Views
 {
     public class AddRemoveView : UIView
     {

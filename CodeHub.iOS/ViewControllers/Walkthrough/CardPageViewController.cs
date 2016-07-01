@@ -1,6 +1,6 @@
 ﻿using UIKit;
 
-namespace CodeHub.iOS.ViewControllers.Walkthrough
+namespace CodeHub.ViewControllers.Walkthrough
 {
     public partial class CardPageViewController : BaseViewController
     {

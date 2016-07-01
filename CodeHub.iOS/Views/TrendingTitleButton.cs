@@ -1,6 +1,6 @@
 using UIKit;
 
-namespace CodeHub.iOS.Views
+namespace CodeHub.Views
 {
     public class TrendingTitleButton : UIButton
     {

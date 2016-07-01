@@ -1,10 +1,9 @@
 using System;
-using CodeHub.iOS.ViewControllers;
 using UIKit;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 using System.Linq;
 
-namespace CodeHub.iOS.ViewControllers
+namespace CodeHub.ViewControllers
 {
     public class MultipleChoiceViewController : DialogViewController
     {

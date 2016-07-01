@@ -3,7 +3,7 @@ using UIKit;
 using CoreGraphics;
 using System.Reactive.Linq;
 
-namespace CodeHub.iOS.Views
+namespace CodeHub.Views
 {
     public class BlurredAlertView : UIViewController
     {

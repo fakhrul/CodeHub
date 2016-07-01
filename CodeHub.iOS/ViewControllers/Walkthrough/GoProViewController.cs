@@ -1,10 +1,10 @@
 ﻿using UIKit;
 using System;
-using CodeHub.iOS.ViewControllers.Application;
-using MvvmCross.Platform;
+using CodeHub.ViewControllers.Application;
 using CodeHub.Core.Services;
+using Splat;
 
-namespace CodeHub.iOS.ViewControllers.Walkthrough
+namespace CodeHub.ViewControllers.Walkthrough
 {
     public partial class GoProViewController : BaseViewController
     {
@@ -21,14 +21,14 @@ namespace CodeHub.iOS.ViewControllers.Walkthrough
             TellMeMoreButton.SetTitleColor(UIColor.White, UIControlState.Normal);
             TellMeMoreButton.Layer.CornerRadius = 6f;
 
-            OnActivation(d => d(TellMeMoreButton.GetClickedObservable().Subscribe(_ => TellMeMore())));
+            OnActivation(d => TellMeMoreButton.GetClickedObservable().Subscribe(_ => TellMeMore()).AddTo(d));
         }
 
         public override void ViewWillAppear(bool animated)
         {
             base.ViewWillAppear(animated);
 
-            var features = Mvx.Resolve<IFeaturesService>();
+            var features = Locator.Current.GetService<IFeaturesService>();
             if (features.IsProEnabled)
             {
                 TitleLabel.Text = "Pro Enabled!";

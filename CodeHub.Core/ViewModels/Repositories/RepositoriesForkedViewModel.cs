@@ -1,42 +1,33 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using CodeHub.Core.Services;
+using GitHubSharp.Models;
+using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels.Repositories
 {
     public class RepositoriesForkedViewModel : RepositoriesViewModel
     {
-        public RepositoriesForkedViewModel()
+        private readonly IApplicationService _applicationService;
+
+        public string Username { get; }
+
+        public string Repository { get; }
+
+        public RepositoriesForkedViewModel(string username, string repository)
         {
-            ShowRepositoryOwner = true;
+            _applicationService = GetService<IApplicationService>();
+
+            Username = username;
+            Repository = repository;
+            Title = "Forks";
         }
 
-        protected override Task Load()
+        protected override async Task<bool> Load(IReactiveList<RepositoryModel> repositories, int page)
         {
-            return Repositories.SimpleCollectionLoad(this.GetApplication().Client.Users[User].Repositories[Repository].GetForks());
-        }
-
-        public string User
-        {
-            get;
-            private set;
-        }
-
-        public string Repository
-        {
-            get;
-            private set;
-        }
-
-        public void Init(NavObject navObject)
-        {
-            User = navObject.User;
-            Repository = navObject.Repository;
-        }
-
-        public class NavObject
-        {
-            public string User { get; set; }
-            public string Repository { get; set; }
+            var request = _applicationService.Client.Users[Username].Repositories[Repository].GetForks(page: page);
+            var items = await _applicationService.Client.ExecuteAsync(request);
+            repositories.AddRange(items.Data);
+            return items.More != null;
         }
     }
 }

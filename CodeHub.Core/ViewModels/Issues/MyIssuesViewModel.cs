@@ -1,37 +1,33 @@
 using System.Threading.Tasks;
-using CodeHub.Core.ViewModels;
 using CodeHub.Core.Filters;
 using GitHubSharp.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System;
 using CodeHub.Core.Messages;
-using MvvmCross.Plugins.Messenger;
+using ReactiveUI;
+using System.Reactive.Linq;
 
 namespace CodeHub.Core.ViewModels.Issues
 {
     public class MyIssuesViewModel : BaseIssuesViewModel<MyIssuesFilterModel>
     {
-        private MvxSubscriptionToken _editToken;
+        private IDisposable _editToken;
 
         private int _selectedFilter;
         public int SelectedFilter
         {
             get { return _selectedFilter; }
-            set 
-            {
-                _selectedFilter = value;
-                RaisePropertyChanged(() => SelectedFilter);
-            }
+            set { this.RaiseAndSetIfChanged(ref _selectedFilter, value); }
         }
 
         public MyIssuesViewModel()
         {
             _issues = new FilterableCollectionViewModel<IssueModel, MyIssuesFilterModel>("MyIssues");
             _issues.GroupingFunction = Group;
-            _issues.Bind(x => x.Filter).Subscribe(_ => LoadCommand.Execute(false));
+            _issues.WhenAnyValue(x => x.Filter).Skip(1).InvokeCommand(LoadCommand);
 
-            this.Bind(x => x.SelectedFilter).Subscribe(x =>
+            this.WhenAnyValue(x => x.SelectedFilter).Subscribe(x =>
             {
                 if (x == 0)
                     _issues.Filter = MyIssuesFilterModel.CreateOpenFilter();
@@ -39,7 +35,7 @@ namespace CodeHub.Core.ViewModels.Issues
                     _issues.Filter = MyIssuesFilterModel.CreateClosedFilter();
             });
 
-            _editToken = Messenger.SubscribeOnMainThread<IssueEditMessage>(x =>
+            _editToken = Messenger.Subscribe<IssueEditMessage>(x =>
             {
                 if (x.Issue == null)
                     return;

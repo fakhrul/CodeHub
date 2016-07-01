@@ -1,71 +1,60 @@
 using System.Threading.Tasks;
-using System.Windows.Input;
-using CodeHub.Core.ViewModels;
-using CodeHub.Core.ViewModels.User;
+using CodeHub.Core.Services;
+using CodeHub.Core.ViewModels.Users;
+using GitHubSharp.Models;
+using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels.Repositories
 {
-    public class RepositoryStargazersViewModel : BaseUserCollectionViewModel
+    public class RepositoryStargazersViewModel : UsersViewModel
     {
-        public string User
+        private readonly IApplicationService _applicationService;
+
+        public string Username { get; }
+
+        public string Repository { get; }
+
+        public RepositoryStargazersViewModel(string username, string repository)
         {
-            get;
-            private set;
+            _applicationService = GetService<IApplicationService>();
+            Username = username;
+            Repository = repository;
+            Title = "Stargazers";
+            EmptyMessage = "There are no stargazers.";
         }
 
-        public string Repository
+        protected override async Task<bool> Load(ReactiveList<BasicUserModel> users, int page)
         {
-            get;
-            private set;
-        }
-
-        public void Init(NavObject navObject)
-        {
-            User = navObject.User;
-            Repository = navObject.Repository;
-        }
-
-        protected override Task Load()
-        {
-            return Users.SimpleCollectionLoad(this.GetApplication().Client.Users[User].Repositories[Repository].GetStargazers());
-        }
-
-        public class NavObject
-        {
-            public string User { get; set; }
-            public string Repository { get; set; }
+            var request = _applicationService.Client.Users[Username].Repositories[Repository].GetStargazers(page);
+            var items = await _applicationService.Client.ExecuteAsync(request);
+            users.AddRange(items.Data);
+            return items.More != null;
         }
     }
 
-    public class RepositoryWatchersViewModel : BaseUserCollectionViewModel
+    public class RepositoryWatchersViewModel : UsersViewModel
     {
-        public string User
+        private readonly IApplicationService _applicationService;
+
+        public string Username { get; }
+
+        public string Repository { get; }
+
+        public RepositoryWatchersViewModel(string username, string repository)
         {
-            get;
-            private set;
+            _applicationService = GetService<IApplicationService>();
+            Username = username;
+            Repository = repository;
+            Title = "Watchers";
+            EmptyMessage = "There are no watchers.";
         }
 
-        public string Repository
+        protected override async Task<bool> Load(ReactiveList<BasicUserModel> users, int page)
         {
-            get;
-            private set;
-        }
-
-        public void Init(NavObject navObject)
-        {
-            User = navObject.User;
-            Repository = navObject.Repository;
-        }
-
-        protected override Task Load()
-        {
-            return Users.SimpleCollectionLoad(this.GetApplication().Client.Users[User].Repositories[Repository].GetWatchers());
-        }
-
-        public class NavObject
-        {
-            public string User { get; set; }
-            public string Repository { get; set; }
+            var request = _applicationService.Client.Users[Username].Repositories[Repository].GetWatchers(page);
+            var items = await _applicationService.Client.ExecuteAsync(request);
+            users.AddRange(items.Data);
+            return items.More != null;
         }
     }
 }

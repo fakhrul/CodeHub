@@ -1,10 +1,10 @@
 using System;
 using UIKit;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 using System.Reactive.Subjects;
 using System.Reactive.Linq;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class BooleanElement : Element 
     {

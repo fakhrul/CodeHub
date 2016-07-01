@@ -1,11 +1,11 @@
 using System;
 using CoreGraphics;
 using UIKit;
-using MvvmCross.Platform;
 using CodeHub.Core.Services;
-using CodeHub.iOS.ViewControllers.Application;
+using CodeHub.ViewControllers.Application;
+using Splat;
 
-namespace CodeHub.iOS.ViewControllers.Accounts
+namespace CodeHub.ViewControllers.Accounts
 {
     public class NewAccountViewController : BaseViewController
     {
@@ -48,8 +48,14 @@ namespace CodeHub.iOS.ViewControllers.Accounts
 
             OnActivation(d =>
             {
-                d(dotComButton.GetClickedObservable().Subscribe(_ => DotComButtonTouch()));
-                d(enterpriseButton.GetClickedObservable().Subscribe(_ => EnterpriseButtonTouch()));
+                dotComButton
+                    .GetClickedObservable()
+                    .Subscribe(_ => DotComButtonTouch())
+                    .AddTo(d);
+                enterpriseButton
+                    .GetClickedObservable()
+                    .Subscribe(_ => EnterpriseButtonTouch())
+                    .AddTo(d);
             });
         }
 
@@ -60,7 +66,7 @@ namespace CodeHub.iOS.ViewControllers.Accounts
 
         private void EnterpriseButtonTouch ()
         {
-            var features = Mvx.Resolve<IFeaturesService>();
+            var features = Locator.Current.GetService<IFeaturesService>();
             if (features.IsProEnabled)
             {
                 NavigationController.PushViewController(new AddAccountViewController(), true);

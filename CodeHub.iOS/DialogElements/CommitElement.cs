@@ -3,9 +3,9 @@ using GitHubSharp.Models;
 using Foundation;
 using UIKit;
 using CodeHub.Core.Utilities;
-using CodeHub.iOS.TableViewCells;
+using CodeHub.TableViewCells;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class CommitElement : Element
     {   

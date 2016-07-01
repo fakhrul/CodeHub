@@ -5,7 +5,7 @@ using SDWebImage;
 using System.Reactive.Subjects;
 using System.Reactive.Linq;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class ButtonElement : StringElement
     {

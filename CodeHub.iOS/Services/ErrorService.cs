@@ -8,7 +8,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Foundation;
 
-namespace CodeHub.iOS.Services
+namespace CodeHub.Services
 {
     public class ErrorService : IErrorService
     {
@@ -75,6 +75,7 @@ namespace CodeHub.iOS.Services
             var request = new HttpRequestMessage(HttpMethod.Post, "https://6o8w5n7wyc.execute-api.us-east-1.amazonaws.com/prod");
             request.Headers.Add("x-api-key", Secrets.ErrorReportingKey);
             request.Content = new StringContent(data, Encoding.UTF8, "application/json");
+            Console.WriteLine("Sending error log: " + data);
             client.SendAsync(request).ToBackground();
         }
 

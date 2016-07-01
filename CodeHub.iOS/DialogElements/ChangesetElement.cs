@@ -1,6 +1,6 @@
-using CodeHub.iOS.Views;
+using CodeHub.Views;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class ChangesetElement : StringElement
     {

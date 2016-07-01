@@ -7,7 +7,7 @@
 
 using Foundation;
 
-namespace CodeHub.iOS.TableViewCells
+namespace CodeHub.TableViewCells
 {
     [Register ("IssueCellView")]
     partial class IssueCellView

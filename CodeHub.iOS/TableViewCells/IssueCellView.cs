@@ -5,7 +5,7 @@ using ObjCRuntime;
 using UIKit;
 using Humanizer;
 
-namespace CodeHub.iOS.TableViewCells
+namespace CodeHub.TableViewCells
 {
     public partial class IssueCellView : UITableViewCell
     {

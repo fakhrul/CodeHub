@@ -1,11 +1,11 @@
 using System;
 using System.Threading.Tasks;
-using MvvmCross.Core.ViewModels;
-using CodeHub.Core.ViewModels;
 using GitHubSharp.Models;
 using CodeHub.Core.Utils;
 using CodeHub.Core.Services;
 using System.Reactive.Linq;
+using ReactiveUI;
+using Splat;
 
 namespace CodeHub.Core.ViewModels.Source
 {
@@ -16,15 +16,15 @@ namespace CodeHub.Core.ViewModels.Source
 
         public CollectionViewModel<ContentModel> Content { get; } = new CollectionViewModel<ContentModel>();
 
-        public string Username { get; private set; }
+        public string Username { get; }
 
-        public string Path { get; private set; }
+        public string Path { get; }
 
-        public string Branch { get; private set; }
+        public string Branch { get; }
 
-        public bool TrueBranch { get; private set; }
+        public bool TrueBranch { get; }
 
-        public string Repository { get; private set; }
+        public string Repository { get; }
 
         private bool _shouldShowPro; 
         public bool ShouldShowPro
@@ -33,19 +33,24 @@ namespace CodeHub.Core.ViewModels.Source
             private set { this.RaiseAndSetIfChanged(ref _shouldShowPro, value); }
         }
 
-        public ReactiveUI.IReactiveCommand<object> GoToItemCommand { get; }
+        public IReactiveCommand<object> GoToItemCommand { get; }
             
-        public SourceTreeViewModel(IApplicationService applicationService, IFeaturesService featuresService)
+        public SourceTreeViewModel(string username, string repository, string branch, string path = null, bool trueBranch = false)
         {
-            _applicationService = applicationService;
-            _featuresService = featuresService;
+            _applicationService = Locator.Current.GetService<IApplicationService>();
+            _featuresService = Locator.Current.GetService<IFeaturesService>();
 
-            GoToItemCommand = ReactiveUI.ReactiveCommand.Create();
+            Username = username;
+            Repository = repository;
+            Branch = branch;
+            Path = path ?? "/";
+            TrueBranch = trueBranch;
+
+            GoToItemCommand = ReactiveCommand.Create();
             GoToItemCommand.OfType<ContentModel>().Subscribe(x => {
                 if (x.Type.Equals("dir", StringComparison.OrdinalIgnoreCase))
                 {
-                    ShowViewModel<SourceTreeViewModel>(new NavObject { Username = Username, Branch = Branch, 
-                        Repository = Repository, Path = x.Path, TrueBranch = TrueBranch });
+                    NavigateTo(new SourceTreeViewModel(Username, Repository, Branch, x.Path, TrueBranch));
                 }
                 if (x.Type.Equals("file", StringComparison.OrdinalIgnoreCase))
                 {
@@ -59,25 +64,14 @@ namespace CodeHub.Core.ViewModels.Source
                             return;
 
                         var sha = x.GitUrl.Substring(x.GitUrl.LastIndexOf("/", StringComparison.Ordinal) + 1);
-                        ShowViewModel<SourceTreeViewModel>(new NavObject {Username = repoId?.Owner, Repository = repoId?.Name, Branch = sha});
+                        NavigateTo(new SourceTreeViewModel(repoId?.Owner, repoId?.Name, sha));
                     }
                     else
                     {
-                        ShowViewModel<SourceViewModel>(new SourceViewModel.NavObject { 
-                            Name = x.Name, Username = Username, Repository = Repository, Branch = Branch, 
-                            Path = x.Path, HtmlUrl = x.HtmlUrl, GitUrl = x.GitUrl, TrueBranch = TrueBranch });
+                        NavigateTo(new SourceViewModel(Username, Repository, Branch, x.Path, x.HtmlUrl, x.Name, x.GitUrl, trueBranch: TrueBranch));
                     }
                 }
             });
-        }
-
-        public void Init(NavObject navObject)
-        {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
-            Branch = navObject.Branch ?? "master";
-            Path = navObject.Path ?? "";
-            TrueBranch = navObject.TrueBranch;
         }
 
         protected override Task Load()
@@ -92,17 +86,6 @@ namespace CodeHub.Core.ViewModels.Source
             }
             
             return Content.SimpleCollectionLoad(this.GetApplication().Client.Users[Username].Repositories[Repository].GetContent(Path, Branch));
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
-            public string Branch { get; set; }
-            public string Path { get; set; }
-
-            // Whether the branch is a real branch and not a node
-            public bool TrueBranch { get; set; }
         }
     }
 }

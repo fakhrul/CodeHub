@@ -1,33 +1,29 @@
-using CodeHub.iOS.ViewControllers;
-using CodeHub.iOS.Views;
+using CodeHub.Views;
 using CodeHub.Core.ViewModels.App;
 using UIKit;
 using System.Linq;
-using CodeHub.Core.Utils;
 using CodeHub.Core.Services;
 using System;
-using MvvmCross.Platform;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
 using System.Collections.Generic;
-using CodeHub.iOS.ViewControllers.Accounts;
+using CodeHub.ViewControllers.Accounts;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using CoreGraphics;
+using Splat;
+using CodeHub.ViewControllers.Events;
+using CodeHub.ViewControllers.Organizations;
+using CodeHub.Views.Repositories;
+using ReactiveUI;
 
-namespace CodeHub.iOS.ViewControllers.Application
+namespace CodeHub.ViewControllers.Application
 {
-    public class MenuViewController : ViewModelDrivenDialogViewController
+    public class MenuViewController : ViewModelDrivenDialogViewController<MenuViewModel>
     {
         private readonly ProfileButton _profileButton = new ProfileButton();
         private readonly UILabel _title;
         private MenuElement _notifications;
         private Section _favoriteRepoSection;
-
-        public new MenuViewModel ViewModel
-        {
-            get { return (MenuViewModel) base.ViewModel; }
-            set { base.ViewModel = value; }
-        }
 
         /// <summary>
         /// Gets or sets the title.
@@ -47,10 +43,15 @@ namespace CodeHub.iOS.ViewControllers.Application
         public MenuViewController()
             : base(false, UITableViewStyle.Plain)
         {
-            var appService = Mvx.Resolve<IApplicationService>();
-            var featuresService = Mvx.Resolve<IFeaturesService>();
+            Console.WriteLine("MenuViewController CTOR");
+            var appService = Locator.Current.GetService<IApplicationService>();
+            var featuresService = Locator.Current.GetService<IFeaturesService>();
+            Console.WriteLine("Created services");
+
             ViewModel = new MenuViewModel(appService, featuresService);
-            Appeared.Take(1).Subscribe(_ => PromptPushNotifications());
+            //Appeared.Take(1).Subscribe(_ => PromptPushNotifications());
+
+            Console.WriteLine("Created VIew Model");
 
             _title = new UILabel(new CGRect(0, 40, 320, 40));
             _title.TextAlignment = UITextAlignment.Left;
@@ -59,24 +60,24 @@ namespace CodeHub.iOS.ViewControllers.Application
             _title.TextColor = UIColor.FromRGB(246, 246, 246);
             NavigationItem.TitleView = _title;
 
-            OnActivation(d =>
-            {
-                d(_profileButton.GetClickedObservable().Subscribe(_ => ProfileButtonClicked()));
-            });
+            //OnActivation(d =>
+            //{
+            //    d(_profileButton.GetClickedObservable().Subscribe(_ => ProfileButtonClicked()));
+            //});
         }
 
         private static async Task PromptPushNotifications()
         {
-            var appService = Mvx.Resolve<IApplicationService>();
+            var appService = Locator.Current.GetService<IApplicationService>();
             if (appService.Account.IsEnterprise)
                 return;
 
-            var featuresService = Mvx.Resolve<IFeaturesService>();
+            var featuresService = Locator.Current.GetService<IFeaturesService>();
             if (!featuresService.IsProEnabled)
                 return;
 
-            var alertDialogService = Mvx.Resolve<IAlertDialogService>();
-            var pushNotifications = Mvx.Resolve<IPushNotificationsService>();
+            var alertDialogService = Locator.Current.GetService<IAlertDialogService>();
+            var pushNotifications = Locator.Current.GetService<IPushNotificationsService>();
 
             if (appService.Account.IsPushNotificationsEnabled == null)
             {
@@ -135,7 +136,7 @@ namespace CodeHub.iOS.ViewControllers.Application
                 foreach (var org in ViewModel.Organizations)
                 {
                     Uri.TryCreate(org.AvatarUrl, UriKind.Absolute, out avatarUri);
-                    eventsSection.Add(new MenuElement(org.Login, () => ViewModel.GoToOrganizationEventsCommand.Execute(org.Login), Octicon.Rss.ToImage(), avatarUri));
+                    eventsSection.Add(new MenuElement(org.Login, () => GoTo(new UserEventsViewController(org.Login)), Octicon.Rss.ToImage(), avatarUri));
                 }
             }
             sections.Add(eventsSection);
@@ -151,7 +152,7 @@ namespace CodeHub.iOS.ViewControllers.Application
             {
                 _favoriteRepoSection = new Section() { HeaderView = new MenuSectionView("Favorite Repositories") };
                 foreach (var pinnedRepository in ViewModel.PinnedRepositories)
-                    _favoriteRepoSection.Add(new PinnedRepoElement(pinnedRepository, ViewModel.GoToRepositoryCommand));
+                    _favoriteRepoSection.Add(new PinnedRepoElement(pinnedRepository, () => GoTo(new RepositoryViewController(pinnedRepository.Owner, pinnedRepository.Name))));
                 sections.Add(_favoriteRepoSection);
             }
             else
@@ -159,13 +160,13 @@ namespace CodeHub.iOS.ViewControllers.Application
                 _favoriteRepoSection = null;
             }
 
-            var orgSection = new Section() { HeaderView = new MenuSectionView("Organizations") };
+            var orgSection = new Section { HeaderView = new MenuSectionView("Organizations") };
             if (ViewModel.Organizations != null && ViewModel.Account.ExpandOrganizations)
             {
                 foreach (var org in ViewModel.Organizations)
                 {
                     Uri.TryCreate(org.AvatarUrl, UriKind.Absolute, out avatarUri);
-                    orgSection.Add(new MenuElement(org.Login, () => ViewModel.GoToOrganizationCommand.Execute(org.Login), Images.Avatar, avatarUri));
+                    orgSection.Add(new MenuElement(org.Login, () => GoTo(new OrganizationViewController(org.Login)), Images.Avatar, avatarUri));
                 }
             }
             else
@@ -183,16 +184,19 @@ namespace CodeHub.iOS.ViewControllers.Application
 //
             var infoSection = new Section() { HeaderView = new MenuSectionView("Info & Preferences") };
             sections.Add(infoSection);
-            infoSection.Add(new MenuElement("Settings", () => ViewModel.GoToSettingsCommand.Execute(null), Octicon.Gear.ToImage()));
+            infoSection.Add(new MenuElement("Settings", () => GoTo(new SettingsViewController()), Octicon.Gear.ToImage()));
 
             if (ViewModel.ShouldShowUpgrades)
-                infoSection.Add(new MenuElement("Upgrades", () => ViewModel.GoToUpgradesCommand.Execute(null), Octicon.Lock.ToImage()));
+                infoSection.Add(new MenuElement("Upgrades", () => GoTo(new UpgradeViewController()), Octicon.Lock.ToImage()));
             
-            infoSection.Add(new MenuElement("Feedback & Support", PresentUserVoice, Octicon.CommentDiscussion.ToImage()));
+            infoSection.Add(new MenuElement("Feedback & Support", () => GoTo(new WebBrowserViewController("https://codehub.uservoice.com/")), Octicon.CommentDiscussion.ToImage()));
             infoSection.Add(new MenuElement("Accounts", ProfileButtonClicked, Octicon.Person.ToImage()));
 
             Root.Reset(sections);
         }
+
+        private void GoTo(UIViewController viewController)
+            => NavigationController.PushViewController(viewController, true);
 
         public override void ViewWillAppear(bool animated)
         {
@@ -212,11 +216,6 @@ namespace CodeHub.iOS.ViewControllers.Application
         {
             base.DidRotate(fromInterfaceOrientation);
             UpdateProfilePicture();
-        }
-
-        private void PresentUserVoice()
-        {
-            ViewModel.GoToSupport.Execute(null);
         }
 
         private void ProfileButtonClicked()
@@ -240,19 +239,16 @@ namespace CodeHub.iOS.ViewControllers.Application
             if (!string.IsNullOrEmpty(ViewModel.Account.AvatarUrl))
                 _profileButton.Uri = new Uri(ViewModel.Account.AvatarUrl);
 
-            ViewModel.Bind(x => x.Notifications).Subscribe(x =>
-            {
-                if (_notifications != null)
-                {
-                    _notifications.NotificationNumber = x;
-                }
-            });
+            this.WhenAnyValue(x => x.ViewModel.Notifications)
+                .Where(_ => _notifications != null)
+                .Subscribe(x => _notifications.NotificationNumber = x);
 
-            ViewModel.Bind(x => x.Organizations).Subscribe(x => CreateMenuRoot());
+            this.WhenAnyValue(x => x.ViewModel.Organizations)
+                .Subscribe(x => CreateMenuRoot());
 
             ViewModel.LoadCommand.Execute(null);
 
-            var appService = Mvx.Resolve<IApplicationService> ();
+            var appService = Locator.Current.GetService<IApplicationService> ();
 
             // A user has been activated!
             if (appService.ActivationAction != null)
@@ -264,14 +260,10 @@ namespace CodeHub.iOS.ViewControllers.Application
 
         private class PinnedRepoElement : MenuElement
         {
-            public CodeHub.Core.Data.PinnedRepository PinnedRepo
-            {
-                get;
-                private set; 
-            }
+            public Core.Data.PinnedRepository PinnedRepo { get; }
 
-            public PinnedRepoElement(CodeHub.Core.Data.PinnedRepository pinnedRepo, System.Windows.Input.ICommand command)
-                : base(pinnedRepo.Name, () => command.Execute(new RepositoryIdentifier(pinnedRepo.Owner, pinnedRepo.Name)), Octicon.Repo.ToImage())
+            public PinnedRepoElement(Core.Data.PinnedRepository pinnedRepo, Action action)
+                : base(pinnedRepo.Name, action, Octicon.Repo.ToImage())
             {
                 PinnedRepo = pinnedRepo;
 
@@ -289,7 +281,7 @@ namespace CodeHub.iOS.ViewControllers.Application
 
         private void DeletePinnedRepo(PinnedRepoElement el)
         {
-            ViewModel.DeletePinnedRepositoryCommand.Execute(el.PinnedRepo);
+            ViewModel.DeletePinnedRepository(el.PinnedRepo);
 
             if (_favoriteRepoSection.Elements.Count == 1)
             {

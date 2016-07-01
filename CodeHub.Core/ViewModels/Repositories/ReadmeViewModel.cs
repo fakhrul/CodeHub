@@ -1,11 +1,10 @@
 using System;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Input;
-using CodeHub.Core.ViewModels;
 using CodeHub.Core.Services;
-using MvvmCross.Core.ViewModels;
 using GitHubSharp.Models;
+using ReactiveUI;
+using Splat;
 
 namespace CodeHub.Core.ViewModels.Repositories
 {
@@ -36,20 +35,12 @@ namespace CodeHub.Core.ViewModels.Repositories
             get { return _contentModel?.HtmlUrl; }
         }
 
-        public ICommand GoToGitHubCommand
+        public ReadmeViewModel(string username, string repository)
         {
-            get { return new MvxCommand(() => GoToUrlCommand.Execute(HtmlUrl), () => _contentModel != null); }
-        }
-
-        public ICommand GoToLinkCommand
-        {
-            get { return GoToUrlCommand; }
-        }
-
-        public ReadmeViewModel(IMarkdownService markdownService)
-        {
+            RepositoryOwner = username;
+            RepositoryName = repository;
             Title = "Readme";
-            _markdownService = markdownService;
+            _markdownService = Locator.Current.GetService<IMarkdownService>();
         }
 
         protected override async Task Load()
@@ -58,18 +49,6 @@ namespace CodeHub.Core.ViewModels.Repositories
             var result = await this.GetApplication().Client.ExecuteAsync(cmd);
             ContentModel = result.Data;
             ContentText = _markdownService.Convert(Encoding.UTF8.GetString(Convert.FromBase64String(result.Data.Content)));
-        }
-
-        public void Init(NavObject navObject)
-        {
-            RepositoryOwner = navObject.Username;
-            RepositoryName = navObject.Repository;
-        }
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
         }
     }
 }

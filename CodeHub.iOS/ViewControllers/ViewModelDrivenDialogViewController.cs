@@ -1,19 +1,18 @@
 using System;
-using MvvmCross.Core.ViewModels;
-using CodeHub.iOS.ViewControllers;
 using UIKit;
 using CodeHub.Core.ViewModels;
-using CodeHub.iOS.Views;
-using MvvmCross.Platform.iOS.Views;
-using MvvmCross.iOS.Views;
-using MvvmCross.Binding.BindingContext;
-using MvvmCross.Platform.Core;
-using CodeHub.iOS.Utilities;
+using CodeHub.Views;
 using System.Linq;
+using ReactiveUI;
+using System.Reactive.Linq;
+using CodeHub.Utilities;
+using Splat;
+using CodeHub.Core.Services;
 
-namespace CodeHub.iOS.ViewControllers
+namespace CodeHub.ViewControllers
 {
-    public abstract class PrettyDialogViewController : ViewModelDrivenDialogViewController
+    public abstract class PrettyDialogViewController<TViewModel> : ViewModelDrivenDialogViewController<TViewModel>
+        where TViewModel : class
     {
         protected readonly SlideUpTitleView SlideUpTitle;
         protected readonly ImageAndTitleHeaderView HeaderView;
@@ -112,14 +111,15 @@ namespace CodeHub.iOS.ViewControllers
         }
     }
 
-    public abstract class ViewModelDrivenDialogViewController : DialogViewController, IMvxIosView, IMvxEventSourceViewController
+    public abstract class ViewModelDrivenDialogViewController<TViewModel> : DialogViewController, IViewFor<TViewModel>
+        where TViewModel : class
     {
+        private readonly LoadingIndicator _indicator = new LoadingIndicator();
         private bool _manualRefreshRequested;
-  
+
         public override void ViewDidLoad()
         {
             base.ViewDidLoad();
-            ViewDidLoadCalled.Raise(this);
 
             var loadableViewModel = ViewModel as LoadableViewModel;
             if (loadableViewModel != null)
@@ -127,11 +127,11 @@ namespace CodeHub.iOS.ViewControllers
                 RefreshControl = new UIRefreshControl();
                 OnActivation(d =>
                 {
-                    d(loadableViewModel.Bind(x => x.IsLoading, true).Subscribe(x =>
+                    loadableViewModel.LoadCommand.IsExecuting.Subscribe(x =>
                     {
                         if (x)
                         {
-                            NetworkActivity.PushNetworkActive();
+                            _indicator.Up();
                             RefreshControl.BeginRefreshing();
 
                             if (!_manualRefreshRequested)
@@ -145,7 +145,7 @@ namespace CodeHub.iOS.ViewControllers
                         }
                         else
                         {
-                            NetworkActivity.PopNetworkActive();
+                            _indicator.Down();
 
                             if (RefreshControl.Refreshing)
                             {
@@ -163,18 +163,58 @@ namespace CodeHub.iOS.ViewControllers
 
                             _manualRefreshRequested = false;
                         }
-                    }));
+                    }).AddTo(d);
                 });
             }
         }
 
-        /// <summary>
-        /// Initializes a new instance of the class.
-        /// </summary>
         protected ViewModelDrivenDialogViewController(bool push = true, UITableViewStyle style = UITableViewStyle.Grouped)
             : base(style, push)
         {
-            this.AdaptForBinding();
+            Appearing
+                .Take(1)
+                .Select(_ => this.WhenAnyValue(x => x.ViewModel))
+                .Switch()
+                .OfType<ILoadableViewModel>()
+                .Select(x => x.LoadCommand)
+                .Subscribe(x => x.ExecuteIfCan());
+
+            OnActivation(disposable =>
+            {
+                this.WhenAnyValue(x => x.ViewModel)
+                    .OfType<IProvidesTitle>()
+                    .Select(x => x.WhenAnyValue(y => y.Title))
+                    .Switch()
+                    .Subscribe(x => Title = x)
+                    .AddTo(disposable);
+
+                this.WhenAnyValue(x => x.ViewModel)
+                    .OfType<IRoutingViewModel>()
+                    .Select(x => x.RequestNavigation)
+                    .Switch()
+                    .Subscribe(x =>
+                    {
+                        var viewModelViewService = Locator.Current.GetService<IViewModelViewService>();
+                        var viewType = viewModelViewService.GetViewFor(x.GetType());
+                        var view = (IViewFor)Activator.CreateInstance(viewType);
+                        view.ViewModel = x;
+                        HandleNavigation(x, view as UIViewController);
+                    }).AddTo(disposable);
+            });
+        }
+
+        protected virtual void HandleNavigation(IBaseViewModel viewModel, UIViewController view)
+        {
+            if (view is IModalViewController)
+            {
+                PresentViewController(new ThemedNavigationController(view), true, null);
+                viewModel.RequestDismiss.Subscribe(_ => DismissViewController(true, null));
+            }
+            else
+            {
+                NavigationController.PushViewController(view, true);
+                viewModel.RequestDismiss.Subscribe(_ => NavigationController.PopToViewController(this, true));
+            }
         }
 
         private void HandleRefreshRequested(object sender, EventArgs e)
@@ -191,7 +231,6 @@ namespace CodeHub.iOS.ViewControllers
         public override void ViewWillAppear(bool animated)
         {
             base.ViewWillAppear(animated);
-            ViewWillAppearCalled.Raise(this, animated);
 
             if (!_isLoaded)
             {
@@ -205,58 +244,25 @@ namespace CodeHub.iOS.ViewControllers
                 RefreshControl.ValueChanged += HandleRefreshRequested;
         }
 
-        public override void ViewWillDisappear(bool animated)
+        private TViewModel _viewModel;
+        public TViewModel ViewModel
         {
-            base.ViewWillDisappear(animated);
-            ViewWillDisappearCalled.Raise(this, animated);
+            get { return _viewModel; }
+            set { this.RaiseAndSetIfChanged(ref _viewModel, value); }
         }
 
-        public object DataContext
+        object IViewFor.ViewModel
         {
-            get { return BindingContext.DataContext; }
-            set { BindingContext.DataContext = value; }
+            get { return ViewModel; }
+            set { ViewModel = (TViewModel)value; }
         }
-
-        public IMvxViewModel ViewModel
-        {
-            get { return DataContext as IMvxViewModel;  }
-            set { DataContext = value; }
-        }
-
-        public IMvxBindingContext BindingContext { get; set; }
-
-        public MvxViewModelRequest Request { get; set; }
 
         public override void ViewDidDisappear(bool animated)
         {
             base.ViewDidDisappear(animated);
-            ViewDidDisappearCalled.Raise(this, animated);
-
             if (RefreshControl != null)
                 RefreshControl.ValueChanged -= HandleRefreshRequested;
         }
-
-        public override void ViewDidAppear(bool animated)
-        {
-            base.ViewDidAppear(animated);
-            ViewDidAppearCalled.Raise(this, animated);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                DisposeCalled.Raise(this);
-            }
-            base.Dispose(disposing);
-        }
-
-        public event EventHandler DisposeCalled;
-        public event EventHandler ViewDidLoadCalled;
-        public event EventHandler<MvxValueEventArgs<bool>> ViewWillAppearCalled;
-        public event EventHandler<MvxValueEventArgs<bool>> ViewDidAppearCalled;
-        public event EventHandler<MvxValueEventArgs<bool>> ViewDidDisappearCalled;
-        public event EventHandler<MvxValueEventArgs<bool>> ViewWillDisappearCalled;
     }
 }
 

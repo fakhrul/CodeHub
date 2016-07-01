@@ -1,4 +1,4 @@
-﻿namespace CodeHub.iOS.ViewControllers.Walkthrough
+﻿namespace CodeHub.ViewControllers.Walkthrough
 {
     public partial class AboutViewController : BaseViewController
     {

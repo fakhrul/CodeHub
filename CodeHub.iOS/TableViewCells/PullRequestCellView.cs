@@ -1,31 +1,19 @@
 using System;
 using Foundation;
 using UIKit;
-using CodeHub.Core.Utilities;
-using ObjCRuntime;
-using Humanizer;
+using CodeHub.Core.ViewModels.PullRequests;
+using ReactiveUI;
 
-namespace CodeHub.iOS.Cells
+namespace CodeHub.TableViewCells
 {
-    public partial class PullRequestCellView : UITableViewCell
+    public partial class PullRequestCellView : BaseTableViewCell<PullRequestItemViewModel>
     {
         public static readonly UINib Nib = UINib.FromName("PullRequestCellView", NSBundle.MainBundle);
         public static readonly NSString Key = new NSString("PullRequestCellView");
 
-        public PullRequestCellView()
-        {
-        }
-
         public PullRequestCellView(IntPtr handle) 
             : base(handle)
         {
-        }
-
-        public static PullRequestCellView Create()
-        {
-            var cell = new PullRequestCellView();
-            var views = NSBundle.MainBundle.LoadNib("PullRequestCellView", cell, null);
-            return Runtime.GetNSObject( views.ValueAt(0) ) as PullRequestCellView;
         }
 
         public override void AwakeFromNib()
@@ -39,13 +27,14 @@ namespace CodeHub.iOS.Cells
             SeparatorInset = new UIEdgeInsets(0, TitleLabel.Frame.Left, 0, 0);
             TitleLabel.TextColor = Theme.CurrentTheme.MainTitleColor;
             TimeLabel.TextColor = Theme.CurrentTheme.MainTextColor;
-        }
 
-        public void Set(string title, DateTimeOffset time, GitHubAvatar avatar)
-        {
-            TitleLabel.Text = title;
-            TimeLabel.Text = time.Humanize();
-            MainImageView.SetAvatar(avatar);
+            this.WhenAnyValue(x => x.ViewModel)
+                .Subscribe(x =>
+                {
+                    TitleLabel.Text = x?.Title;
+                    TimeLabel.Text = x?.Details;
+                    MainImageView.SetAvatar(x?.Avatar);
+                });
         }
 
         protected override void Dispose(bool disposing)

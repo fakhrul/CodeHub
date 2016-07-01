@@ -2,6 +2,10 @@
 {
     public class UpgradeViewModel : BaseViewModel
     {
+        public UpgradeViewModel()
+        {
+            Title = "Pro Upgrade";
+        }
     }
 }
 

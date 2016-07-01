@@ -7,7 +7,7 @@
 using Foundation;
 using System.CodeDom.Compiler;
 
-namespace CodeHub.iOS.Cells
+namespace CodeHub.TableViewCells
 {
     [Register ("PullRequestCellView")]
     partial class PullRequestCellView

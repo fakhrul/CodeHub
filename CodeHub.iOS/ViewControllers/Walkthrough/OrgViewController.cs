@@ -1,7 +1,7 @@
 ﻿using UIKit;
 using System;
 
-namespace CodeHub.iOS.ViewControllers.Walkthrough
+namespace CodeHub.ViewControllers.Walkthrough
 {
     public partial class OrgViewController : BaseViewController
     {
@@ -17,7 +17,7 @@ namespace CodeHub.iOS.ViewControllers.Walkthrough
             TellMeMoreButton.SetTitleColor(UIColor.White, UIControlState.Normal);
             TellMeMoreButton.Layer.CornerRadius = 6f;
 
-            OnActivation(d => d(TellMeMoreButton.GetClickedObservable().Subscribe(_ => TellMeMore())));
+            OnActivation(d => TellMeMoreButton.GetClickedObservable().Subscribe(_ => TellMeMore()).AddTo(d));
         }
 
         private void TellMeMore()

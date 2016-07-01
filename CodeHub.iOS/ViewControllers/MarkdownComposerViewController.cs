@@ -1,18 +1,17 @@
 using System;
-using CodeHub.iOS.ViewControllers;
 using UIKit;
-using MvvmCross.Platform;
 using CodeHub.Core.Services;
 using Foundation;
 using System.Net;
 using System.Collections.Specialized;
 using System.Threading.Tasks;
 using System.Linq;
-using CodeHub.iOS.Services;
-using CodeHub.iOS.WebViews;
+using CodeHub.Services;
+using CodeHub.WebViews;
 using WebKit;
+using Splat;
 
-namespace CodeHub.iOS.ViewControllers
+namespace CodeHub.ViewControllers
 {
     public class MarkdownComposerViewController : Composer
     {
@@ -82,7 +81,7 @@ namespace CodeHub.iOS.ViewControllers
 
         private async void UploadImage(UIImage img)
         {
-            var hud = new CodeHub.iOS.Utilities.Hud(null);
+            var hud = new CodeHub.Utilities.Hud(null);
             hud.Show("Uploading...");
 
             try
@@ -107,7 +106,7 @@ namespace CodeHub.iOS.ViewControllers
                 });
 
 
-                var json = Mvx.Resolve<IJsonSerializationService>();
+                var json = Locator.Current.GetService<IJsonSerializationService>();
                 var imgurModel = json.Deserialize<ImgurModel>(System.Text.Encoding.UTF8.GetString(returnData));
                 TextView.InsertText("![](" + imgurModel.Data.Link + ")");
             }
@@ -215,7 +214,7 @@ namespace CodeHub.iOS.ViewControllers
                 TextView.RemoveFromSuperview();
                 Add(_previewView);
 
-                var markdownService = Mvx.Resolve<IMarkdownService>();
+                var markdownService = Locator.Current.GetService<IMarkdownService>();
                 var markdownText = markdownService.Convert(Text);
                 var model = new DescriptionModel(markdownText, (int)UIFont.PreferredSubheadline.PointSize);
                 var view = new MarkdownView { Model = model }.GenerateString();

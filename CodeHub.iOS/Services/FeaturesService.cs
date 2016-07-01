@@ -3,7 +3,7 @@ using System;
 using System.Threading.Tasks;
 using UIKit;
 
-namespace CodeHub.iOS.Services
+namespace CodeHub.Services
 {
     public class FeaturesService : IFeaturesService
     {

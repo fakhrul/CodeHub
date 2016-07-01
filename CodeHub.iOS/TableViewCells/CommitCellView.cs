@@ -5,7 +5,7 @@ using CodeHub.Core.Utilities;
 using ObjCRuntime;
 using Humanizer;
 
-namespace CodeHub.iOS.TableViewCells
+namespace CodeHub.TableViewCells
 {
     public partial class CommitCellView : UITableViewCell
     {

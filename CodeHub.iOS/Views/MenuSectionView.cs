@@ -1,7 +1,7 @@
 using CoreGraphics;
 using UIKit;
 
-namespace CodeHub.iOS.Views
+namespace CodeHub.Views
 {
     public sealed class MenuSectionView : UIView
     {

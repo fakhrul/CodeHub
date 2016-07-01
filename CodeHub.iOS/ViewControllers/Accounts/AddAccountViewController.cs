@@ -2,30 +2,25 @@ using CoreGraphics;
 using CodeHub.Core.ViewModels.Accounts;
 using Foundation;
 using UIKit;
-using CodeHub.iOS.Utilities;
-using CodeHub.iOS.ViewControllers;
-using MvvmCross.Platform;
+using CodeHub.Utilities;
 using CodeHub.Core.Services;
-using CodeHub.Core.Factories;
 using System;
 using GitHubSharp;
-using System.Linq;
 using System.Reactive.Threading.Tasks;
 using ReactiveUI;
+using Splat;
 
-namespace CodeHub.iOS.ViewControllers.Accounts
+namespace CodeHub.ViewControllers.Accounts
 {
     public partial class AddAccountViewController : BaseViewController
     {
         private readonly UIColor EnterpriseBackgroundColor = UIColor.FromRGB(50, 50, 50);
 
-        public AddAccountViewModel ViewModel { get; }
+        public AddAccountViewModel ViewModel { get; } = new AddAccountViewModel();
 
         public AddAccountViewController()
             : base("AddAccountView", null)
         {
-            ViewModel = new AddAccountViewModel(Mvx.Resolve<IApplicationService>(), Mvx.Resolve<ILoginFactory>());
-            ViewModel.Init(new AddAccountViewModel.NavObject());
         }
 
         public override void ViewDidLoad()
@@ -33,7 +28,6 @@ namespace CodeHub.iOS.ViewControllers.Accounts
             base.ViewDidLoad();
 
             Title = "Login";
-
 
             View.BackgroundColor = EnterpriseBackgroundColor;
             Logo.Image = Images.Logos.EnterpriseMascot;
@@ -47,7 +41,7 @@ namespace CodeHub.iOS.ViewControllers.Accounts
             LoginButton.Layer.ShadowOpacity = 0.3f;
 
             var attributes = new UIStringAttributes {
-                ForegroundColor = UIColor.LightGray,
+                ForegroundColor = UIColor.LightGray
             };
 
             Domain.AttributedPlaceholder = new NSAttributedString("Domain", attributes);
@@ -78,18 +72,18 @@ namespace CodeHub.iOS.ViewControllers.Accounts
 
             OnActivation(d =>
                 {
-                    d(User.GetChangedObservable().Subscribe(x => ViewModel.Username = x));
-                    d(Password.GetChangedObservable().Subscribe(x => ViewModel.Password = x));
-                    d(Domain.GetChangedObservable().Subscribe(x => ViewModel.Domain = x));
-                    d(LoginButton.GetClickedObservable().BindCommand(ViewModel.LoginCommand));
-                    d(ViewModel.Bind(x => x.IsLoggingIn).SubscribeStatus("Logging in..."));
-                    d(ViewModel.LoginCommand.ThrownExceptions.Subscribe(HandleLoginException));
+                    User.GetChangedObservable().Subscribe(x => ViewModel.Username = x).AddTo(d);
+                    Password.GetChangedObservable().Subscribe(x => ViewModel.Password = x).AddTo(d);
+                    Domain.GetChangedObservable().Subscribe(x => ViewModel.Domain = x).AddTo(d);
+                    LoginButton.GetClickedObservable().InvokeCommand(ViewModel.LoginCommand).AddTo(d);
+                    ViewModel.WhenAnyValue(x => x.IsLoggingIn).SubscribeStatus("Logging in...").AddTo(d);
+                    ViewModel.LoginCommand.ThrownExceptions.Subscribe(HandleLoginException).AddTo(d);
                 });
         }
 
         private void HandleLoginException(Exception e)
         {
-            var alert = Mvx.Resolve<IAlertDialogService>();
+            var alert = Locator.Current.GetService<IAlertDialogService>();
 
             var authException = e as UnauthorizedException;
             if (authException != null && authException.Headers.Contains("X-GitHub-OTP"))

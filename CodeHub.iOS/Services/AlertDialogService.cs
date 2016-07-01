@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Foundation;
 using CoreGraphics;
 
-namespace CodeHub.iOS.Services
+namespace CodeHub.Services
 {
     public class AlertDialogService : IAlertDialogService
     {

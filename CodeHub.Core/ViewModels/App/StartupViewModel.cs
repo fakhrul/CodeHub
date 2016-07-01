@@ -1,15 +1,11 @@
 using System;
-using CodeHub.Core.ViewModels;
-using CodeHub.Core.Data;
 using CodeHub.Core.Services;
 using System.Linq;
-using CodeHub.Core.Factories;
-using System.Windows.Input;
-using Dumb = MvvmCross.Core.ViewModels;
 using System.Threading.Tasks;
 using ReactiveUI;
-using CodeHub.Core.ViewModels.Accounts;
 using System.Reactive.Threading.Tasks;
+using System.Reactive;
+using Splat;
 
 namespace CodeHub.Core.ViewModels.App
 {
@@ -18,7 +14,7 @@ namespace CodeHub.Core.ViewModels.App
         private bool _isLoggingIn;
         private string _status;
         private Uri _imageUrl;
-        private readonly ILoginFactory _loginFactory;
+        private readonly ILoginService _loginFactory;
         private readonly IApplicationService _applicationService;
         private readonly IDefaultValueService _defaultValueService;
 
@@ -40,10 +36,7 @@ namespace CodeHub.Core.ViewModels.App
             private set { this.RaiseAndSetIfChanged(ref _imageUrl, value); }
         }
 
-        public ICommand StartupCommand
-        {
-            get { return new Dumb.MvxAsyncCommand(Startup); }
-        }
+        public ReactiveCommand<Unit> StartupCommand { get; }
 
         public ReactiveCommand<object> GoToMenu { get; } = ReactiveCommand.Create();
 
@@ -51,14 +44,13 @@ namespace CodeHub.Core.ViewModels.App
 
         public ReactiveCommand<object> GoToNewAccount { get; } = ReactiveCommand.Create();
 
-        public StartupViewModel(
-            ILoginFactory loginFactory, 
-            IApplicationService applicationService, 
-            IDefaultValueService defaultValueService)
+        public StartupViewModel()
         {
-            _loginFactory = loginFactory;
-            _applicationService = applicationService;
-            _defaultValueService = defaultValueService;
+            _loginFactory = Locator.Current.GetService<ILoginService>();
+            _applicationService = Locator.Current.GetService<IApplicationService>();
+            _defaultValueService = Locator.Current.GetService<IDefaultValueService>();
+
+            StartupCommand = ReactiveCommand.CreateAsyncTask(_ => Startup());
         }
 
         protected async Task Startup()
@@ -103,7 +95,7 @@ namespace CodeHub.Core.ViewModels.App
             {
                 DisplayAlertAsync("The credentials for the selected account are incorrect. " + e.Message)
                     .ToObservable()
-                    .BindCommand(GoToAccounts);
+                    .InvokeCommand(GoToAccounts);
             }
             catch (Exception e)
             {

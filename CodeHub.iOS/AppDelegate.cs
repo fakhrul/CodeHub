@@ -5,8 +5,7 @@
 // --------------------------------------------------------------------------------------------------------------------
 
 using System.Collections.Generic;
-using System;    
-using MvvmCross.Core.ViewModels;
+using System;
 using Foundation;
 using UIKit;
 using CodeHub.Core.Utils;
@@ -14,17 +13,20 @@ using CodeHub.Core.Services;
 using System.Threading.Tasks;
 using System.Linq;
 using ObjCRuntime;
-using MvvmCross.iOS.Platform;
-using MvvmCross.Platform;
-using MvvmCross.Core.Views;
 using System.Net.Http;
-using CodeHub.iOS.Services;
+using CodeHub.Services;
 using ReactiveUI;
 using CodeHub.Core.Messages;
-using CodeHub.iOS.XCallback;
+using CodeHub.XCallback;
 using System.Reactive.Linq;
+using Splat;
+using CodeHub.ViewControllers.Source;
+using CodeHub.ViewControllers.Issues;
+using CodeHub.Views.PullRequests;
+using CodeHub.Views.Repositories;
+using CodeHub.Core;
 
-namespace CodeHub.iOS
+namespace CodeHub
 {
     /// <summary>
     /// The UIApplicationDelegate for the application. This class is responsible for launching the 
@@ -32,13 +34,11 @@ namespace CodeHub.iOS
     /// application events from iOS.
     /// </summary>
     [Register("AppDelegate")]
-    public class AppDelegate : MvxApplicationDelegate
+    public class AppDelegate : UIApplicationDelegate
     {
         public string DeviceToken;
 
         public override UIWindow Window { get; set; }
-
-        public IosViewPresenter Presenter { get; private set; }
 
         /// <summary>
         /// This is the main entry point of the application.
@@ -57,13 +57,14 @@ namespace CodeHub.iOS
         /// <returns>True or false.</returns>
         public override bool FinishedLaunching(UIApplication app, NSDictionary options)
         {
+            // Register all services for our application
+            Application.Initialize();
+            ServiceRegistration.Register();
+
             Window = new UIWindow(UIScreen.MainScreen.Bounds);
-            Presenter = new IosViewPresenter(this.Window);
-            var setup = new Setup(this, Presenter);
-            setup.Initialize();
 
             // Initialize the error service!
-            var errorService = Mvx.Resolve<IErrorService>();
+            var errorService = Locator.Current.GetService<IErrorService>();
             errorService.Init();
 
             var culture = new System.Globalization.CultureInfo("en");
@@ -74,9 +75,9 @@ namespace CodeHub.iOS
             UIApplication.SharedApplication.SetStatusBarStyle(UIStatusBarStyle.LightContent, true);
             Theme.Setup();
 
-            var features = Mvx.Resolve<IFeaturesService>();
-            var defaultValueService = Mvx.Resolve<IDefaultValueService>();
-            var purchaseService = Mvx.Resolve<IInAppPurchaseService>();
+            var features = Locator.Current.GetService<IFeaturesService>();
+            var defaultValueService = Locator.Current.GetService<IDefaultValueService>();
+            var purchaseService = Locator.Current.GetService<IInAppPurchaseService>();
             purchaseService.ThrownExceptions.Subscribe(ex => {
                 AlertDialogService.ShowAlert("Error Purchasing", ex.Message);
                 errorService.Log(ex);
@@ -107,7 +108,7 @@ namespace CodeHub.iOS
             if (!defaultValueService.TryGet("HAS_SEEN_WELCOME_INTRO", out hasSeenWelcome) || !hasSeenWelcome)
             {
                 defaultValueService.Set("HAS_SEEN_WELCOME_INTRO", true);
-                var welcomeViewController = new CodeHub.iOS.ViewControllers.Walkthrough.WelcomePageViewController();
+                var welcomeViewController = new CodeHub.ViewControllers.Walkthrough.WelcomePageViewController();
                 welcomeViewController.WantsToDimiss += GoToStartupView;
                 TransitionToViewController(welcomeViewController);
             }
@@ -133,7 +134,7 @@ namespace CodeHub.iOS
 
         private void GoToStartupView()
         {
-            var startup = new CodeHub.iOS.ViewControllers.Application.StartupViewController();
+            var startup = new CodeHub.ViewControllers.Application.StartupViewController();
             TransitionToViewController(startup);
             MessageBus.Current.Listen<LogoutMessage>()
                 .ObserveOn(RxApp.MainThreadScheduler)
@@ -172,34 +173,29 @@ namespace CodeHub.iOS
         {
             try
             {
-                var viewDispatcher = Mvx.Resolve<IMvxViewDispatcher>();
-                var appService = Mvx.Resolve<IApplicationService>();
+                var appService = Locator.Current.GetService<IApplicationService>();
                 var repoId = RepositoryIdentifier.FromFullName(data["r"].ToString());
                 var parameters = new Dictionary<string, string>() {{"Username", repoId?.Owner}, {"Repository", repoId?.Name}};
 
-                MvxViewModelRequest request;
+                UIViewController view;
                 if (data.ContainsKey(new NSString("c")))
                 {
-                    request = MvxViewModelRequest<CodeHub.Core.ViewModels.Changesets.ChangesetViewModel>.GetDefaultRequest();
-                    parameters.Add("Node", data["c"].ToString());
-                    parameters.Add("ShowRepository", "True");
+                    view = new ChangesetViewController(repoId?.Owner, repoId?.Name, data["c"].ToString(), true);
                 }
                 else if (data.ContainsKey(new NSString("i")))
                 {
-                    request = MvxViewModelRequest<CodeHub.Core.ViewModels.Issues.IssueViewModel>.GetDefaultRequest();
-                    parameters.Add("Id", data["i"].ToString());
+                    var id = long.Parse(data["i"].ToString());
+                    view = new IssueViewController(repoId?.Owner, repoId?.Name, id);
                 }
                 else if (data.ContainsKey(new NSString("p")))
                 {
-                    request = MvxViewModelRequest<CodeHub.Core.ViewModels.PullRequests.PullRequestViewModel>.GetDefaultRequest();
-                    parameters.Add("Id", data["p"].ToString());
+                    var id = long.Parse(data["p"].ToString());
+                    view = new PullRequestViewController(repoId?.Owner, repoId?.Name, id);
                 }
                 else
                 {
-                    request = MvxViewModelRequest<CodeHub.Core.ViewModels.Repositories.RepositoryViewModel>.GetDefaultRequest();
+                    view = new RepositoryViewController(repoId?.Owner, repoId?.Name);
                 }
-
-                request.ParameterValues = parameters;
 
                 var username = data["u"].ToString();
 
@@ -213,12 +209,13 @@ namespace CodeHub.iOS
                     }
                 }
 
-                appService.SetUserActivationAction(() => viewDispatcher.ShowViewModel(request));
+                //appService.SetUserActivationAction(() => nav.NavigateTo(view));
 
                 if (appService.Account == null && !fromBootup)
                 {
-                    var startupViewModelRequest = MvxViewModelRequest<CodeHub.Core.ViewModels.App.StartupViewModel>.GetDefaultRequest();
-                    viewDispatcher.ShowViewModel(startupViewModelRequest);
+                    //TODO: FIX THIS
+                    //var startupViewModelRequest = MvxViewModelRequest<Core.ViewModels.App.StartupViewModel>.GetDefaultRequest();
+                    //viewDispatcher.ShowViewModel(startupViewModelRequest);
                 }
             }
             catch (Exception e)
@@ -236,10 +233,10 @@ namespace CodeHub.iOS
         {
             DeviceToken = deviceToken.Description.Trim('<', '>').Replace(" ", "");
 
-            var app = Mvx.Resolve<IApplicationService>();
+            var app = Locator.Current.GetService<IApplicationService>();
             if (app.Account != null && !app.Account.IsPushNotificationsEnabled.HasValue)
             {
-                Mvx.Resolve<IPushNotificationsService>().Register().ToBackground();
+                Locator.Current.GetService<IPushNotificationsService>().Register().ToBackground();
                 app.Account.IsPushNotificationsEnabled = true;
                 app.Accounts.Update(app.Account);
             }

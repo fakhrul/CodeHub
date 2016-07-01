@@ -1,20 +1,14 @@
-using CodeHub.iOS.ViewControllers;
-using CodeHub.Core.ViewModels.User;
+using CodeHub.Core.ViewModels.Users;
 using UIKit;
 using System;
-using CodeHub.iOS.DialogElements;
+using CodeHub.DialogElements;
+using ReactiveUI;
 
-namespace CodeHub.iOS.ViewControllers.Users
+namespace CodeHub.ViewControllers.Users
 {
-    public class UserViewController : PrettyDialogViewController
+    public class UserViewController : PrettyDialogViewController<UserViewModel>
     {
         private readonly Lazy<UIBarButtonItem> _actionButton;
-
-        public new UserViewModel ViewModel
-        {
-            get { return (UserViewModel)base.ViewModel; }
-            set { base.ViewModel = value; }
-        }
 
         public UserViewController()
         {
@@ -38,23 +32,23 @@ namespace CodeHub.iOS.ViewControllers.Users
             var gists = new StringElement("Gists", Octicon.Gist.ToImage());
             Root.Add(new [] { new Section { split }, new Section { events, organizations, repos, gists } });
 
-            ViewModel.Bind(x => x.User).Subscribe(x => {
-                followers.Text = x?.Followers.ToString() ?? "-";
-                following.Text = x?.Following.ToString() ?? "-";
-                HeaderView.SubText = string.IsNullOrWhiteSpace(x?.Name) ? null : x.Name;
-                HeaderView.SetImage(x?.AvatarUrl, Images.Avatar);
-                RefreshHeaderView();
-            });
-
             OnActivation(d =>
             {
-                d(followers.Clicked.BindCommand(ViewModel.GoToFollowersCommand));
-                d(following.Clicked.BindCommand(ViewModel.GoToFollowingCommand));
-                d(events.Clicked.BindCommand(ViewModel.GoToEventsCommand));
-                d(organizations.Clicked.BindCommand(ViewModel.GoToOrganizationsCommand));
-                d(repos.Clicked.BindCommand(ViewModel.GoToRepositoriesCommand));
-                d(gists.Clicked.BindCommand(ViewModel.GoToGistsCommand));
-                d(ViewModel.Bind(x => x.Title, true).Subscribe(x => Title = x));
+                followers.Clicked.InvokeCommand(ViewModel.GoToFollowersCommand).AddTo(d);
+                following.Clicked.InvokeCommand(ViewModel.GoToFollowingCommand).AddTo(d);
+                events.Clicked.InvokeCommand(ViewModel.GoToEventsCommand).AddTo(d);
+                organizations.Clicked.InvokeCommand(ViewModel.GoToOrganizationsCommand).AddTo(d);
+                repos.Clicked.InvokeCommand(ViewModel.GoToRepositoriesCommand).AddTo(d);
+                gists.Clicked.InvokeCommand(ViewModel.GoToGistsCommand).AddTo(d);
+
+                this.WhenAnyValue(x => x.ViewModel.User).Subscribe(x =>
+                {
+                    followers.Text = x?.Followers.ToString() ?? "-";
+                    following.Text = x?.Following.ToString() ?? "-";
+                    HeaderView.SubText = string.IsNullOrWhiteSpace(x?.Name) ? null : x.Name;
+                    HeaderView.SetImage(x?.AvatarUrl, Images.Avatar);
+                    RefreshHeaderView();
+                }).AddTo(d);
             });
         }
 

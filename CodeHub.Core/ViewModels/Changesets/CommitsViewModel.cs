@@ -1,32 +1,21 @@
-using System;
-using CodeHub.Core.ViewModels;
 using GitHubSharp.Models;
-using System.Windows.Input;
 using System.Threading.Tasks;
 using GitHubSharp;
 using System.Collections.Generic;
-using MvvmCross.Core.ViewModels;
 using CodeHub.Core.Services;
+using ReactiveUI;
+using Splat;
 
 namespace CodeHub.Core.ViewModels.Changesets
 {
     public abstract class CommitsViewModel : LoadableViewModel
     {
-        private readonly CollectionViewModel<CommitModel> _commits = new CollectionViewModel<CommitModel>();
         private readonly IFeaturesService _featuresService;
         private readonly IApplicationService _applicationService;
 
-        public string Username
-        {
-            get;
-            private set;
-        }
+        public string Username { get; }
 
-        public string Repository
-        {
-            get;
-            private set;
-        }
+        public string Repository { get; }
 
         private bool _shouldShowPro; 
         public bool ShouldShowPro
@@ -35,26 +24,14 @@ namespace CodeHub.Core.ViewModels.Changesets
             protected set { this.RaiseAndSetIfChanged(ref _shouldShowPro, value); }
         }
 
-        public ICommand GoToChangesetCommand
-        {
-            get { return new MvxCommand<CommitModel>(x => ShowViewModel<ChangesetViewModel>(new ChangesetViewModel.NavObject { Username = Username, Repository = Repository, Node = x.Sha })); }
-        }
+        public CollectionViewModel<CommitModel> Commits { get; } = new CollectionViewModel<CommitModel>();
 
-        public CollectionViewModel<CommitModel> Commits
+        protected CommitsViewModel(string username, string repository)
         {
-            get { return _commits; }
-        }
+            _applicationService = Locator.Current.GetService<IApplicationService>();
+            _featuresService = Locator.Current.GetService<IFeaturesService>();
 
-        protected CommitsViewModel(IApplicationService applicationService, IFeaturesService featuresService)
-        {
-            _applicationService = applicationService;
-            _featuresService = featuresService;
-        }
-
-        public void Init(NavObject navObject)
-        {
-            Username = navObject.Username;
-            Repository = navObject.Repository;
+            Title = "Commits";
         }
 
         protected override Task Load()
@@ -72,12 +49,6 @@ namespace CodeHub.Core.ViewModels.Changesets
         }
 
         protected abstract GitHubRequest<List<CommitModel>> GetRequest();
-
-        public class NavObject
-        {
-            public string Username { get; set; }
-            public string Repository { get; set; }
-        }
     }
 }
 

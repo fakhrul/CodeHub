@@ -1,93 +1,75 @@
 using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using MvvmCross.Core.ViewModels;
-using CodeHub.Core.ViewModels;
 using CodeHub.Core.Filters;
 using CodeHub.Core.ViewModels.Issues;
 using CodeHub.Core.ViewModels.PullRequests;
 using GitHubSharp.Models;
 using CodeHub.Core.Messages;
-using System.Collections.Generic;
 using CodeHub.Core.ViewModels.Source;
 using CodeHub.Core.ViewModels.Changesets;
 using CodeHub.Core.Utils;
+using ReactiveUI;
+using System.Reactive;
+using System.Reactive.Linq;
 
 namespace CodeHub.Core.ViewModels.Notifications
 {
     public class NotificationsViewModel : LoadableViewModel
     {
         private readonly FilterableCollectionViewModel<NotificationModel, NotificationsFilterModel> _notifications;
-        private ICommand _readAllCommand;
-        private ICommand _readCommand;
-        private ICommand _readReposCommand;
-        private int _shownIndex;
-        private bool _isMarking;
 
         public FilterableCollectionViewModel<NotificationModel, NotificationsFilterModel> Notifications
         {
             get { return _notifications; }
         }
 
+        private int _shownIndex;
         public int ShownIndex
         {
             get { return _shownIndex; }
             set { this.RaiseAndSetIfChanged(ref _shownIndex, value); }
         }
 
+        private bool _isMarking;
         public bool IsMarking
         {
             get { return _isMarking; }
             set { this.RaiseAndSetIfChanged(ref _isMarking, value); }
         }
 
-        public ICommand ReadCommand
-        {
-            get { return _readCommand ?? (_readCommand = new MvxCommand<NotificationModel>(x => Read(x)));}
-        }
+        public IReactiveCommand<Unit> ReadRepositoriesCommand { get; }
 
-        public ICommand ReadRepositoriesCommand
-        {
-            get { return _readReposCommand ?? (_readReposCommand = new MvxCommand<string>(x => MarkRepoAsRead(x))); }
-        }
+        public IReactiveCommand<Unit> ReadAllCommand { get; }
 
-        public ICommand ReadAllCommand
-        {
-            get { return _readAllCommand ?? (_readAllCommand = new MvxCommand(() => MarkAllAsRead(), () => ShownIndex != 2 && !IsLoading && !IsMarking && Notifications.Any())); }
-        }
-
-        public ICommand GoToNotificationCommand
-        {
-            get { return new MvxCommand<NotificationModel>(GoToNotification); }
-        }
+        public IReactiveCommand<object> GoToNotificationCommand { get; } = ReactiveCommand.Create();
         
         private void GoToNotification(NotificationModel x)
         {
             var subject = x.Subject.Type.ToLower();
             if (subject.Equals("issue"))
             {
-                ReadCommand.Execute(x);
+                Read(x).ToBackground();
                 var node = x.Subject.Url.Substring(x.Subject.Url.LastIndexOf('/') + 1);
-                ShowViewModel<IssueViewModel>(new IssueViewModel.NavObject { Username = x.Repository.Owner.Login,Repository = x.Repository.Name, Id = long.Parse(node) });
+                NavigateTo(new IssueViewModel(x.Repository.Owner.Login, x.Repository.Name, long.Parse(node)));
             }
             else if (subject.Equals("pullrequest"))
             {
-                ReadCommand.Execute(x);
+                Read(x).ToBackground();
                 var node = x.Subject.Url.Substring(x.Subject.Url.LastIndexOf('/') + 1);
-                ShowViewModel<PullRequestViewModel>(new PullRequestViewModel.NavObject { Username = x.Repository.Owner.Login, Repository = x.Repository.Name, Id = long.Parse(node) });
+                NavigateTo(new PullRequestViewModel(x.Repository.Owner.Login, x.Repository.Name, long.Parse(node)));
             }
             else if (subject.Equals("commit"))
             {
-                ReadCommand.Execute(x);
+                Read(x).ToBackground();
                 var node = x.Subject.Url.Substring(x.Subject.Url.LastIndexOf('/') + 1);
-                ShowViewModel<ChangesetViewModel>(new ChangesetViewModel.NavObject { Username = x.Repository.Owner.Login, Repository = x.Repository.Name, Node = node });
+                NavigateTo(new ChangesetViewModel(x.Repository.Owner.Login, x.Repository.Name, node));
             }
             else if (subject.Equals("release"))
             {
-                ReadCommand.Execute(x);
-                ShowViewModel<BranchesAndTagsViewModel>(new BranchesAndTagsViewModel.NavObject { Username = x.Repository.Owner.Login, Repository = x.Repository.Name, IsShowingBranches = false });
+                Read(x).ToBackground();
+                NavigateTo(new BranchesAndTagsViewModel(x.Repository.Owner.Login, x.Repository.Name, false));
             }
         }
 
@@ -95,15 +77,34 @@ namespace CodeHub.Core.ViewModels.Notifications
         {
             _notifications = new FilterableCollectionViewModel<NotificationModel, NotificationsFilterModel>("Notifications");
             _notifications.GroupingFunction = (n) => n.GroupBy(x => x.Repository.FullName);
-            _notifications.Bind(x => x.Filter).Subscribe(_ => LoadCommand.Execute(false));
+            _notifications.WhenAnyValue(x => x.Filter).Skip(1).InvokeCommand(LoadCommand);
 
-            this.Bind(x => x.ShownIndex).Subscribe(x => {
-                if (x == 0) _notifications.Filter = NotificationsFilterModel.CreateUnreadFilter();
-                else if (x == 1) _notifications.Filter = NotificationsFilterModel.CreateParticipatingFilter();
-                else _notifications.Filter = NotificationsFilterModel.CreateAllFilter();
-                ((IMvxCommand)ReadAllCommand).RaiseCanExecuteChanged();
+            GoToNotificationCommand
+                .OfType<NotificationModel>()
+                .Subscribe(GoToNotification);
+            //    get { return _readAllCommand ?? (_readAllCommand = new MvxCommand(() => MarkAllAsRead(), () => ShownIndex != 2 && !IsLoading && !IsMarking && Notifications.Any())); }
+
+            var canReadAll = Observable.CombineLatest(
+                LoadCommand.IsExecuting,
+                this.WhenAnyValue(x => x.ShownIndex),
+                this.WhenAnyValue(x => x.IsMarking),
+                (x, y, z) => !x && y != 2 && !z); 
+
+            ReadAllCommand = ReactiveCommand.CreateAsyncTask(canReadAll, _ => MarkAllAsRead());
+
+            ReadRepositoriesCommand = ReactiveCommand.CreateAsyncTask(async t =>
+            {
+                if (t is string)
+                    await MarkRepoAsRead(t as string);
             });
-            this.Bind(x => x.IsLoading).Subscribe(_ => ((IMvxCommand)ReadAllCommand).RaiseCanExecuteChanged());
+
+            this.WhenAnyValue(x => x.ShownIndex)
+                .Skip(1)
+                .Subscribe(x => {
+                    if (x == 0) _notifications.Filter = NotificationsFilterModel.CreateUnreadFilter();
+                    else if (x == 1) _notifications.Filter = NotificationsFilterModel.CreateParticipatingFilter();
+                    else _notifications.Filter = NotificationsFilterModel.CreateAllFilter();
+                });
 
             if (_notifications.Filter.Equals(NotificationsFilterModel.CreateUnreadFilter()))
                 _shownIndex = 0;
@@ -195,7 +196,7 @@ namespace CodeHub.Core.ViewModels.Notifications
         {
             // Only update if we're looking at 
             if (!Notifications.Filter.All && !Notifications.Filter.Participating)
-                Messenger.Publish<NotificationCountMessage>(new NotificationCountMessage(this) { Count = Notifications.Items.Sum(x => x.Unread ? 1 : 0) });
+                Messenger.Publish(new NotificationCountMessage { Count = Notifications.Items.Sum(x => x.Unread ? 1 : 0) });
         }
     }
 }

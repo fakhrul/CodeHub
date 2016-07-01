@@ -1,5 +1,4 @@
 using System;
-using CodeHub.Core.ViewModels;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using GitHubSharp.Models;
@@ -68,7 +67,7 @@ namespace CodeHub.Core.ViewModels.Gists
 
                 IsSaving = true;
                 var newGist = (await this.GetApplication().Client.ExecuteAsync(this.GetApplication().Client.AuthenticatedUser.Gists.CreateGist(createGist))).Data;
-                Messenger.Publish(new GistAddMessage(this, newGist));
+                Messenger.Publish(new GistAddMessage(newGist));
                 return newGist;
             }
             finally

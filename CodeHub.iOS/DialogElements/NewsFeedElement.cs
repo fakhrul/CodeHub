@@ -4,10 +4,10 @@ using CoreGraphics;
 using System.Linq;
 using Foundation;
 using UIKit;
-using CodeHub.iOS.TableViewCells;
+using CodeHub.TableViewCells;
 using Humanizer;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class NewsFeedElement : Element
     {

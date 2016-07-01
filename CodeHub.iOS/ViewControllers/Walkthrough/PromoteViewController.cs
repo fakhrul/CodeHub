@@ -1,15 +1,15 @@
 ﻿using UIKit;
 using System;
 using CodeHub.Core.Services;
-using MvvmCross.Platform;
+using Splat;
 
-namespace CodeHub.iOS.ViewControllers.Walkthrough
+namespace CodeHub.ViewControllers.Walkthrough
 {
     public partial class PromoteViewController : BaseViewController
     {
         private bool _shouldWatch;
         private bool _shouldStar;
-        private Lazy<IDefaultValueService> _defaultValueService = new Lazy<IDefaultValueService>(() => Mvx.Resolve<IDefaultValueService>());
+        private Lazy<IDefaultValueService> _defaultValueService = new Lazy<IDefaultValueService>(() => Locator.Current.GetService<IDefaultValueService>());
 
         public PromoteViewController()
             : base("PromoteViewController", null)
@@ -29,8 +29,8 @@ namespace CodeHub.iOS.ViewControllers.Walkthrough
             WatchButton.Layer.CornerRadius = 6f;
 
             OnActivation(d => {
-                d(WatchButton.GetClickedObservable().Subscribe(_ => WatchCodeHub()));
-                d(StarButton.GetClickedObservable().Subscribe(_ => StarCodeHub()));
+                WatchButton.GetClickedObservable().Subscribe(_ => WatchCodeHub()).AddTo(d);
+                StarButton.GetClickedObservable().Subscribe(_ => StarCodeHub()).AddTo(d);
             });
         }
 

@@ -7,7 +7,7 @@
 using Foundation;
 using System.CodeDom.Compiler;
 
-namespace CodeHub.iOS.ViewControllers.Accounts
+namespace CodeHub.ViewControllers.Accounts
 {
     [Register ("AddAccountView")]
     partial class AddAccountViewController

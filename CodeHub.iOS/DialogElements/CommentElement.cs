@@ -1,9 +1,9 @@
 using UIKit;
-using CodeHub.iOS.TableViewCells;
+using CodeHub.TableViewCells;
 using System;
 using CodeHub.Core.Utilities;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class CommentElement : Element
     {   

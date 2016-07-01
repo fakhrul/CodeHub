@@ -1,7 +1,7 @@
 using CoreGraphics;
 using UIKit;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class LabelElement : StringElement
     {

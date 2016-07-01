@@ -8,7 +8,7 @@ using CodeHub.Core.Services;
 using System.Linq;
 using Splat;
 
-namespace CodeHub.iOS.Services
+namespace CodeHub.Services
 {
     public interface IInAppPurchaseService
     {

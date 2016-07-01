@@ -1,21 +1,17 @@
 using System;
 using UIKit;
-using CodeHub.iOS;
 using SDWebImage;
 using Foundation;
 using CodeHub.Core.ViewModels.App;
-using CodeHub.iOS.ViewControllers;
-using MvvmCross.Platform;
-using CodeHub.Core.Factories;
-using CodeHub.Core.Services;
 using MonoTouch.SlideoutNavigation;
-using CodeHub.iOS.ViewControllers.Accounts;
+using CodeHub.ViewControllers.Accounts;
 using CodeHub.Core.Utilities;
 using System.Linq;
+using ReactiveUI;
 
-namespace CodeHub.iOS.ViewControllers.Application
+namespace CodeHub.ViewControllers.Application
 {
-    public class StartupViewController : BaseViewController
+    public class StartupViewController : BaseViewController<StartupViewModel>
     {
         const float imageSize = 128f;
 
@@ -23,14 +19,9 @@ namespace CodeHub.iOS.ViewControllers.Application
         private UILabel _statusLabel;
         private UIActivityIndicatorView _activityView;
 
-        public StartupViewModel ViewModel { get; }
-
         public StartupViewController()
         {
-            ViewModel = new StartupViewModel(
-                Mvx.Resolve<ILoginFactory>(),
-                Mvx.Resolve<IApplicationService>(),
-                Mvx.Resolve<IDefaultValueService>());
+            ViewModel = new StartupViewModel();
         }
 
         public override void ViewWillLayoutSubviews()
@@ -67,12 +58,12 @@ namespace CodeHub.iOS.ViewControllers.Application
 
             OnActivation(d =>
             {
-                d(ViewModel.Bind(x => x.ImageUrl).Subscribe(UpdatedImage));
-                d(ViewModel.Bind(x => x.Status).Subscribe(x => _statusLabel.Text = x));
-                d(ViewModel.GoToMenu.Subscribe(GoToMenu));
-                d(ViewModel.GoToAccounts.Subscribe(GoToAccounts));
-                d(ViewModel.GoToNewAccount.Subscribe(GoToNewAccount));
-                d(ViewModel.Bind(x => x.IsLoggingIn).Subscribe(x =>
+                ViewModel.WhenAnyValue(x => x.ImageUrl).Subscribe(UpdatedImage).AddTo(d);
+                ViewModel.WhenAnyValue(x => x.Status).Subscribe(x => _statusLabel.Text = x).AddTo(d);
+                ViewModel.GoToMenu.Subscribe(GoToMenu).AddTo(d);
+                ViewModel.GoToAccounts.Subscribe(GoToAccounts).AddTo(d);
+                ViewModel.GoToNewAccount.Subscribe(GoToNewAccount).AddTo(d);
+                ViewModel.WhenAnyValue(x => x.IsLoggingIn).Subscribe(x =>
                 {
                     if (x)
                         _activityView.StartAnimating();
@@ -80,7 +71,7 @@ namespace CodeHub.iOS.ViewControllers.Application
                         _activityView.StopAnimating();
 
                     _activityView.Hidden = !x;
-                }));
+                }).AddTo(d);
             });
         }
 
@@ -89,10 +80,9 @@ namespace CodeHub.iOS.ViewControllers.Application
             var vc = new MenuViewController();
             var slideoutController = new SlideoutNavigationController();
             slideoutController.MenuViewController = new MenuNavigationController(vc, slideoutController);
-            (UIApplication.SharedApplication.Delegate as AppDelegate).Do(y => y.Presenter.SlideoutNavigationController = slideoutController);
-            vc.ViewModel.GoToDefaultTopView.Execute(null);
             slideoutController.ModalTransitionStyle = UIModalTransitionStyle.CrossDissolve;
             PresentViewController(slideoutController, true, null);
+            vc.ViewModel.GoToDefaultTopView.Execute(null);
         }
 
         private void GoToNewAccount(object o)

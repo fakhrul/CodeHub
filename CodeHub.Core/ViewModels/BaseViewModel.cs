@@ -1,14 +1,10 @@
 using CodeHub.Core.Services;
-using System.Windows.Input;
-using MvvmCross.Core.ViewModels;
-using CodeHub.Core.ViewModels;
-using MvvmCross.Plugins.Messenger;
-using MvvmCross.Platform;
 using ReactiveUI;
 using System;
 using System.Reactive;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using Splat;
 
 namespace CodeHub.Core.ViewModels
 {
@@ -31,20 +27,12 @@ namespace CodeHub.Core.ViewModels
     /// <summary>
     ///    Defines the BaseViewModel type.
     /// </summary>
-    public abstract class BaseViewModel : MvxViewModel, IBaseViewModel, IReactiveObject
+    public abstract class BaseViewModel : ReactiveObject, IBaseViewModel
     {
         private readonly ViewModelActivator _viewModelActivator = new ViewModelActivator();
         private readonly ISubject<IBaseViewModel> _requestNavigationSubject = new Subject<IBaseViewModel>();
         private readonly ISubject<Unit> _requestDismissSubject = new Subject<Unit>();
-
-        public event PropertyChangingEventHandler PropertyChanging;
-
-        public void RaisePropertyChanging(PropertyChangingEventArgs args)
-        {
-            this.RaisePropertyChanged(args.PropertyName);
-        }
-
-
+    
         ViewModelActivator ISupportsActivation.Activator
         {
             get { return _viewModelActivator; }
@@ -54,14 +42,7 @@ namespace CodeHub.Core.ViewModels
         public string Title
         {
             get { return _title; }
-            protected set
-            {
-                if (value != _title)
-                {
-                    _title = value;
-                    this.RaisePropertyChanged();
-                }
-            }
+            set { this.RaiseAndSetIfChanged(ref _title, value); }
         }
 
         protected void NavigateTo(IBaseViewModel viewModel)
@@ -85,33 +66,6 @@ namespace CodeHub.Core.ViewModels
         }
 
         /// <summary>
-        /// Gets the go to URL command.
-        /// </summary>
-        /// <value>The go to URL command.</value>
-        public ICommand GoToUrlCommand
-        {
-            get { return new MvxCommand<string>(x => ShowViewModel<WebBrowserViewModel>(new WebBrowserViewModel.NavObject { Url = x })); }
-        }
-
-        /// <summary>
-        /// Gets the ViewModelTxService
-        /// </summary>
-        /// <value>The tx sevice.</value>
-        protected IViewModelTxService TxSevice
-        {
-            get { return GetService<IViewModelTxService>(); }
-        }
-
-        /// <summary>
-        /// Gets the messenger service
-        /// </summary>
-        /// <value>The messenger.</value>
-        protected IMvxMessenger Messenger
-        {
-            get { return GetService<IMvxMessenger>(); }
-        }
-
-        /// <summary>
         /// Gets the alert service
         /// </summary>
         /// <value>The alert service.</value>
@@ -127,7 +81,7 @@ namespace CodeHub.Core.ViewModels
         /// <returns>An instance of the service.</returns>
         protected TService GetService<TService>() where TService : class
         {
-            return Mvx.Resolve<TService>();
+            return Locator.Current.GetService<TService>();
         }
 
         /// <summary>

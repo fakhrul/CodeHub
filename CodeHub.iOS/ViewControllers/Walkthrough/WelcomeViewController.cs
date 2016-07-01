@@ -1,7 +1,7 @@
 ﻿using UIKit;
 using System;
 
-namespace CodeHub.iOS.ViewControllers.Walkthrough
+namespace CodeHub.ViewControllers.Walkthrough
 {
     public partial class WelcomeViewController : BaseViewController
     {
@@ -18,7 +18,7 @@ namespace CodeHub.iOS.ViewControllers.Walkthrough
             GoButton.BackgroundColor = UIColor.FromRGB(0x29, 0x80, 0xb9);
             GoButton.SetTitleColor(UIColor.White, UIControlState.Normal);
             GoButton.Layer.CornerRadius = 6f;
-            OnActivation(d => d(GoButton.GetClickedObservable().Subscribe(_ => WantsToDimiss?.Invoke())));
+            OnActivation(d => GoButton.GetClickedObservable().Subscribe(_ => WantsToDimiss?.Invoke()).AddTo(d));
         }
     }
 }

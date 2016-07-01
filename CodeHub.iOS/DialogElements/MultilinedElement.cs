@@ -1,11 +1,11 @@
 using UIKit;
-using CodeHub.iOS.TableViewCells;
+using CodeHub.TableViewCells;
 using System.Reactive.Subjects;
 using System;
 using System.Reactive.Linq;
 using Foundation;
 
-namespace CodeHub.iOS.DialogElements
+namespace CodeHub.DialogElements
 {
     public class MultilinedElement : Element
     {
