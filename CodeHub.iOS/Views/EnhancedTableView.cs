@@ -5,7 +5,7 @@ using UIKit;
 
 namespace CodeHub.Views
 {
-    public sealed class EnhancedTableView : ReactiveTableView, IActivatable
+    public class EnhancedTableView : ReactiveTableView, IActivatable
     {
         private UIRefreshControl _refreshControl;
 
@@ -33,18 +33,6 @@ namespace CodeHub.Views
                     (TableFooterView as UIActivityIndicatorView)?.StopAnimating();
                     TableFooterView = null;
                 }
-            }
-        }
-
-        public UIRefreshControl RefreshControl
-        {
-            get { return _refreshControl; }
-            set
-            {
-                _refreshControl?.RemoveFromSuperview();
-                _refreshControl = value;
-                if (_refreshControl != null)
-                    AddSubview(_refreshControl);
             }
         }
 

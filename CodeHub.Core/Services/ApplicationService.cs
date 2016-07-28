@@ -1,7 +1,7 @@
 using CodeHub.Core.Data;
-using CodeHub.Core.Services;
 using GitHubSharp;
 using System;
+using Octokit;
 
 namespace CodeHub.Core.Services
 {
@@ -10,8 +10,9 @@ namespace CodeHub.Core.Services
         public Client Client { get; private set; }
         public GitHubAccount Account { get; private set; }
         public IAccountsService Accounts { get; private set; }
-
+        public GitHubClient GitHubClient { get; private set; }
         public Action ActivationAction { get; set; }
+
 
         public ApplicationService(IAccountsService accountsService)
         {
@@ -24,6 +25,7 @@ namespace CodeHub.Core.Services
             Accounts.SetDefault(null);
             Account = null;
             Client = null;
+            GitHubClient = null;
         }
 
         public void ActivateUser(GitHubAccount account, Client client)

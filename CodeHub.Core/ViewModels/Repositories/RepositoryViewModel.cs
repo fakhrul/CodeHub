@@ -121,7 +121,7 @@ namespace CodeHub.Core.ViewModels.Repositories
             if (Branches != null && Branches.Count == 1)
                 NavigateTo(new ChangesetsViewModel(Username, RepositoryName, null));
             else
-                NavigateTo(new ChangesetBranchesViewModel(Username, RepositoryName));
+                NavigateTo(BranchesViewModel.ForCommits(Username, RepositoryName));
         }
 
         public IReactiveCommand<object> PinCommand { get; }

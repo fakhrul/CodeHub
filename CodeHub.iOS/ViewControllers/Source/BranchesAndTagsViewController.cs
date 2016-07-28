@@ -1,52 +1,46 @@
 using System;
 using CodeHub.Core.ViewModels.Source;
 using UIKit;
-using CodeHub.DialogElements;
-using CodeHub.Views;
 using ReactiveUI;
 
 namespace CodeHub.ViewControllers.Source
 {
-    public class BranchesAndTagsViewController : ViewModelCollectionDrivenDialogViewController<BranchesAndTagsViewModel>
+    public class BranchesAndTagsViewController : BaseViewController<BranchesAndTagsViewModel>
     {
         private readonly UISegmentedControl _viewSegment = new UISegmentedControl(new object[] {"Branches", "Tags"});
-
-        public BranchesAndTagsViewController()
-        {
-            NavigationItem.TitleView = _viewSegment;
-
-            EmptyView = new Lazy<UIView>(() =>
-                new EmptyListView(Octicon.GitBranch.ToEmptyListImage(), "There are no items."));
-        }
 
         public override void ViewDidLoad()
         {
             base.ViewDidLoad();
 
-            var weakVm = new WeakReference<BranchesAndTagsViewModel>(ViewModel);
+            var branchesViewController = new BranchesViewController { ViewModel = ViewModel.Branches };
+            var tagsViewController = new TagsViewController { ViewModel = ViewModel.Tags };
 
-            BindCollection(ViewModel.Items, x => {
-                var e = new StringElement(x.Name);
-                e.Clicked.Subscribe(MakeCallback(weakVm, x));
-                return e;
-            });
+            AddChildViewController(branchesViewController);
+            AddChildViewController(tagsViewController);
 
-            OnActivation(d =>
+            Add(branchesViewController.View);
+            Add(tagsViewController.View);
+
+            NavigationItem.TitleView = _viewSegment;
+
+            OnActivation(disposable =>
             {
-                this.WhenAnyValue(x => x.ViewModel.SelectedFilter)
-                    .Subscribe(x => _viewSegment.SelectedSegment = x)
-                    .AddTo(d);
-                
                 _viewSegment
                     .GetChangedObservable()
-                    .Subscribe(_ => ViewModel.SelectedFilter = (int)_viewSegment.SelectedSegment)
-                    .AddTo(d);
-            });
-        }
+                    .Subscribe(x => ViewModel.ShowBranches = x == 0)
+                    .AddTo(disposable);
 
-        private static Action<object> MakeCallback(WeakReference<BranchesAndTagsViewModel> weakVm, BranchesAndTagsViewModel.ViewObject viewObject)
-        {
-            return new Action<object>(_ => weakVm.Get()?.GoToSourceCommand.Execute(viewObject));
+                this.WhenAnyValue(x => x.ViewModel.ShowBranches)
+                    .Subscribe(x =>
+                    {
+                        View.EndEditing(true);
+                        _viewSegment.SelectedSegment = x ? 0 : 1;
+                        branchesViewController.View.Hidden = !x;
+                        tagsViewController.View.Hidden = x;
+                    })
+                    .AddTo(disposable);
+            });
         }
     }
 }

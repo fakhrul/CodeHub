@@ -13,7 +13,7 @@ using Splat;
 namespace CodeHub.Core.ViewModels.PullRequests
 {
     public class PullRequestListViewModel
-        : ReactiveObject, ILoadableViewModel, IListViewModel<PullRequestItemViewModel>, IPaginatableViewModel
+        : BaseViewModel, ILoadableViewModel, IListViewModel<PullRequestItemViewModel>, IPaginatableViewModel
     {
         private readonly IApplicationService _applicationService;
         private readonly IDisposable _pullRequestEditSubscription;
@@ -41,7 +41,7 @@ namespace CodeHub.Core.ViewModels.PullRequests
             private set { this.RaiseAndSetIfChanged(ref _loadMoreCommand, value); }
         }
 
-        public PullRequestListViewModel(string username, string repository, Action<IBaseViewModel> navigate, bool open = true)
+        public PullRequestListViewModel(string username, string repository, bool open = true)
         {
             var application = _applicationService = Locator.Current.GetService<IApplicationService>();
 
@@ -49,7 +49,7 @@ namespace CodeHub.Core.ViewModels.PullRequests
                 x =>
                 {
                     var vm = new PullRequestItemViewModel(x);
-                    vm.GoToCommand.Subscribe(_ => navigate(new PullRequestViewModel(username, repository, x.Number, x)));
+                    vm.GoToCommand.Subscribe(_ => NavigateTo(new PullRequestViewModel(username, repository, x.Number, x)));
                     return vm;
                 },
                 x => x.Title.ContainsKeyword(SearchText),

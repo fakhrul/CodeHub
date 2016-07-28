@@ -50,9 +50,10 @@ namespace CodeHub.Core.ViewModels.Repositories
                 {
                     try
                     {
+                        repositories.Clear();
                         var request = this.GetApplication().Client.Repositories.SearchRepositories(new[] { SearchText }, new string[] { });
                         var response = await this.GetApplication().Client.ExecuteAsync(request);
-                        repositories.Reset(response.Data.Items);
+                        repositories.AddRange(response.Data.Items);
                     }
                     catch
                     {

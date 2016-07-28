@@ -34,7 +34,7 @@ namespace CodeHub.Core.ViewModels.Source
         }
 
         public IReactiveCommand<object> GoToItemCommand { get; }
-            
+
         public SourceTreeViewModel(string username, string repository, string branch, string path = null, bool trueBranch = false)
         {
             _applicationService = Locator.Current.GetService<IApplicationService>();

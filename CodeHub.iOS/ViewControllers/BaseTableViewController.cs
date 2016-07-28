@@ -75,8 +75,11 @@ namespace CodeHub.ViewControllers
                 var tableView = _tableView.Value;
                 InvokeOnMainThread(() =>
                 {
-                    tableView.Source?.Dispose();
-                    tableView.Source = null;
+                    if (tableView.Handle != IntPtr.Zero)
+                    {
+                        tableView.Source?.Dispose();
+                        tableView.Source = null;
+                    }
                 });
             }
 

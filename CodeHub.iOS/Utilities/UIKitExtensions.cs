@@ -102,7 +102,7 @@ namespace UIKit
                     subView.DisposeAll();
 
                 view.RemoveFromSuperview();
-                view.Dispose();
+                //view.Dispose();
             }
             catch
             {

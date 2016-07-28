@@ -1,11 +1,14 @@
 using System;
 using CodeHub.Core.Data;
+using Octokit;
 
 namespace CodeHub.Core.Services
 {
     public interface IApplicationService
     {
         GitHubSharp.Client Client { get; }
+
+        GitHubClient GitHubClient { get; }
 
         GitHubAccount Account { get; }
 

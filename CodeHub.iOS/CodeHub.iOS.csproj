@@ -299,7 +299,7 @@
     <Compile Include="ViewControllers\WebBrowserViewController.cs" />
     <Compile Include="ViewControllers\Repositories\RepositoriesTrendingViewController.cs" />
     <Compile Include="ViewControllers\Source\BranchesAndTagsViewController.cs" />
-    <Compile Include="ViewControllers\Source\ChangesetBranchesViewController.cs" />
+    <Compile Include="ViewControllers\Source\BranchesViewController.cs" />
     <Compile Include="ViewControllers\Source\ChangesetDiffViewController.cs" />
     <Compile Include="ViewControllers\Source\ChangesetsViewController.cs" />
     <Compile Include="ViewControllers\Source\ChangesetViewController.cs" />
@@ -360,6 +360,10 @@
     <Compile Include="TableViewCells\OrganizationTableViewCell.cs" />
     <Compile Include="TableViewSources\GistTableViewSource.cs" />
     <Compile Include="TableViewSources\PullRequestTableViewSource.cs" />
+    <Compile Include="ViewControllers\PullRequests\PullRequestListViewController.cs" />
+    <Compile Include="TableViewSources\RefTableViewSource.cs" />
+    <Compile Include="TableViewCells\RefTableViewCell.cs" />
+    <Compile Include="ViewControllers\Source\TagsViewController.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -405,6 +409,15 @@
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\portable-net45+wp80+win8+wpa81\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.Primitives">
+      <HintPath>..\packages\Microsoft.Net.Http.2.2.29\lib\Xamarin.iOS10\System.Net.Http.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.Extensions">
+      <HintPath>..\packages\Microsoft.Net.Http.2.2.29\lib\Xamarin.iOS10\System.Net.Http.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Octokit">
+      <HintPath>..\packages\Octokit.0.20.0\lib\portable-net45+wp80+win+wpa81\Octokit.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

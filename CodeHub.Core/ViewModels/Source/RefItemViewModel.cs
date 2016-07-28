@@ -1,12 +1,16 @@
-﻿using System;
-using ReactiveUI;
+﻿using ReactiveUI;
 
 namespace CodeHub.Core.ViewModels.Source
 {
-    public class RefItemViewModel : ReactiveObject
+    public class RefItemViewModel : ReactiveObject, ICanGoToViewModel
     {
-        public RefItemViewModel()
+        public string Name { get; }
+
+        public IReactiveCommand<object> GoToCommand { get; } = ReactiveCommand.Create();
+        
+        public RefItemViewModel(string name)
         {
+            Name = name;
         }
     }
 }
